@@ -1,0 +1,239 @@
+begin driver 2
+rename test on fs1 (need driver1 first)
+rv from renameFile /a to /x is 0 correct
+rv from renameFile /a to /y is -2 correct
+rv from openFile /a is -1 correct
+rv from renameFile /b to /c is -3 correct
+rv from renameFile /b to /y is 0 correct
+rv from renameFile /c to /$ is -1 correct
+rv from renameFile /c to z is -1 correct
+rv from openFile /a is 1 correct
+rv from renameFile /c to /z is -4 correct
+rv from closeFile /c is 0 correct
+rv from lockFile /c is 1 correct
+rv from renameFile /c to /z is -4 correct
+rv from unlockFile /c is 0 correct 
+
+delete testing 
+rv from deleteFile /$ is -3 correct
+rv from deleteFile b is -3 correct
+rv from deleteFile /bb is -3 correct
+rv from deleteFile /y is 0 correct
+rv from deleteFile /y is -1 correct
+rv from openFile /y is -1 correct
+rv from openFile /d is 2 correct
+rv from deleteFile /d is -2 correct
+rv from closeFile /d is 0 correct
+rv from lockFile /c is 2 correct
+rv from deleteFile /c is -2 correct
+rv from unlockFile /c is 0 correct 
+
+create files on 3 partitions
+rv from createFile /a fs1 is 0 correct 
+rv from createFile /b fs1 is 0 correct 
+rv from createFile /a fs2 is 0 correct 
+rv from createFile /b fs2 is 0 correct 
+rv from createFile /a fs3 is 0 correct 
+rv from createFile /b fs3 is 0 correct 
+
+read/write and files on 3 partitions
+rv from openFile /a w fs1 is 3 correct 
+rv from openFile /a m fs2 is 1 correct 
+rv from openFile /a m fs3 is 1 correct 
+rv from openFile /d w fs2 is -1 correct 
+rv from openFile /d w fs3 is -1 correct 
+rv from writeFile /a fs1 is 37 correct 
+rv from writeFile /a fs2 is 64 correct 
+rv from writeFile /a fs3 is 100 correct 
+rv from writeFile ?? fs3 is -1 correct 
+rv from closeFile /a fs1 is 0 correct
+rv from closeFile /a fs2 is 0 correct
+rv from closeFile /a fs2 is -1 correct
+rv from closeFile /a fs3 is 0 correct
+rv from closeFile /a fs3 is -1 correct
+rv from closeFile ?? fs3 is -1 correct
+rv from openFile /a r fs1 is 4 correct 
+rv from openFile /a m fs2 is 2 correct 
+rv from openFile /a r fs3 is 2 correct 
+rv from openFile /b m fs3 is 3 correct 
+rv from readFile /a fs1 is 20 correct 
+Data read is 
+ssssssssssssssssssss
+rv from readFile /a fs1 is 17 correct 
+Data read is 
+sssssssssssssssss
+rv from readFile /a fs2 is 64 correct 
+Data read is 
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+rv from readFile /a fs3 is 100 correct 
+Data read is 
+KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
+rv from readFile /a fs3 is 0 correct 
+Data read is 
+
+rv from writeFile /a fs1 is -3 correct 
+rv from readFile /a fs1 is 0 correct 
+Data read is 
+
+rv from readFile /a fs2 is 0 correct 
+Data read is 
+
+rv from appendFile /b fs3 is 20 correct 
+rv from seekFile /b fs3 is 0 correct 
+rv from readFile /b fs3 is 20 correct 
+Data read is 
+bbbbbbbbbbbbbbbbbbbb
+
+locks on 3 partitions 
+rv from closeFile /a fs1 is 0 correct
+rv from closeFile /a fs2 is 0 correct
+rv from closeFile /a fs3 is 0 correct
+rv from lockFile /a fs2 is 1 correct
+rv from lockFile /a fs3 is 1 correct
+rv from unlockFile /a fs2 is 0 correct 
+rv from lockFile /b fs3 is -3 correct
+rv from unlockFile /a fs3 is 0 correct 
+rv from closeFile /b fs3 is 0 correct
+
+directory edge test on fs2
+rv from createFile /b is -1 correct 
+rv from createFile /c is 0 correct 
+rv from createFile /d is 0 correct 
+rv from createFile /e is 0 correct 
+rv from createFile /f is 0 correct 
+rv from createFile /g is 0 correct 
+rv from createFile /h is 0 correct 
+rv from createFile /i is 0 correct 
+rv from createFile /j is 0 correct 
+rv from createFile /k is 0 correct 
+rv from createFile /l is 0 correct 
+rv from openFile /j r is 3 correct 
+rv from openFile /k r is 4 correct 
+rv from openFile /l r is 5 correct 
+rv from writeFile /l is 7 correct 
+rv from closeFile /l is 0 correct
+rv from deleteFile /a is 0 correct
+rv from deleteFile /b is 0 correct
+rv from openFile /l r is 6 correct 
+rv from closeFile /l is 0 correct
+rv from deleteFile /c is 0 correct
+rv from deleteFile /d is 0 correct
+rv from deleteFile /e is 0 correct
+rv from deleteFile /f is 0 correct
+rv from deleteFile /g is 0 correct
+rv from deleteFile /h is 0 correct
+rv from deleteFile /i is 0 correct
+rv from deleteFile /j is -2 correct
+rv from closeFile /j is 0 correct
+rv from closeFile /k is 0 correct
+rv from deleteFile /j is 0 correct
+rv from deleteFile /k is 0 correct
+rv from openFile /l r is 7 correct 
+rv from closeFile /l is 0 correct
+rv from deleteFile /l is 0 correct
+
+file edge test and rw accuraty on fs2
+rv from createFile /z is 0 correct 
+rv from openFile /z r is 8 correct 
+rv from writeFile /z is 600 correct 
+rv from writeFile /z is 600 correct 
+rv from seekFile is 0 correct 
+rv from writeFile /z is 64 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from seekFile is 0
+rv from writeFile /z is 4 correct 
+rv from appendFile is 16 correct 
+rv from appendFile is -3 correct exceeds max file size
+rv from seekFile is 0
+rv from readFile /z is 64 correct 
+Data read is 
+MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbss
+rv from readFile /z is 64 correct 
+Data read is 
+ssbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMss
+rv from readFile /z is 64 correct 
+Data read is 
+ssMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMbbbbbbbbbbbbbbbb
+rv from closeFile /z is 0 correct
+End of driver 2

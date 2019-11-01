@@ -1,0 +1,77 @@
+Driver 3:  Directories basic tests
+create  Directory on fs1
+rv from createDirectory /e is 0 correct
+rv from createDirectory /a is -4 correct file /a exists
+rv from createDirectory  f is -3 correct
+rv from createDirectory /ff is -3 correct
+rv from createDirectory /$ is -3 correct
+rv from createDirectory /g is 0 correct
+rv from createDirectory /h is 0 correct
+rv from createFile /e is -4 correct
+rv from createDirectory /e/a is 0 correct
+rv from createFile /e/b is 0 correct
+rv from createFile /e/a is -4 correct
+rv from createDirectory /e/a/a is 0 correct
+rv from createFile /e/a/a is -4 correct
+rv from createFile /e/a/a/b is 0 correct
+rv from createFile /e/a/$/b is -3 correct
+rv from createFile /e/a/a/m is 0 correct
+
+ open files in directories on fs1
+rv from openFile is /e/b 1 correct
+rv from openFile is /e/a -1 correct directory
+rv from openFile is /e/a/a/b 2 correct
+rv from openFile is /e/$/a/b -1 correct
+rv from lockFile /e/a/a/m is 1 correct
+rv from openFile is /e/a/a/m -3 correct bad lockid
+rv from openFile is /e/a/a/m 3 correct 
+
+ reads and writes on fs1
+rv from writeFile /e/b f1 is 5 Correct wrote 5 J
+rv from writeFile /e/b f1 is 5 Correct wrote 5 S
+rv from writeFile /e/b f1 is 5 Correct wrote 5 z
+rv from writeFile /e/b f1 is 5 Correct wrote 5 h
+rv from appendFile /e/b f1 is 5 Correct wrote 5 J
+rv from writeFile /e/a/a/m f3 is 37 Correct wrote 37 J
+rv from writeFile /e/a/a/m f3 is 91 Correct wrote 91 z
+rv from closeFile /e/b is 0 correct
+rv from closeFile /e/a/a/b is 0 correct
+rv from closeFile /e/a/a/m is 0 correct
+rv from unlockFile /e/a/a/m is 0 correct
+rv from openFile /e/b is 4 correct
+rv from openFile /e/a/a/b is 5 correct
+rv from openFile /e/a/a/m is 6 correct
+rv from readFile /e/b is 25 Correct 
+Data read is 
+JJJJJSSSSSzzzzzhhhhhJJJJJ
+rv from readFile /e/a/a/b is 0 Correct 
+Data read is 
+
+rv from readFile /e/a/a/m is 128 Correct 
+Data read is 
+JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+rv from closeFile /e/b is 0 correct
+rv from closeFile /e/a/a/b is 0 correct
+rv from closeFile /e/a/a/m is 0 correct
+
+create and deletes of directories and files
+rv from deleteFile /e/a/a/b is 0 correct
+rv from createDirectory /g/a is 0 correct
+rv from createDirectory /g/a/g is 0 correct
+rv from createFile /g/a/g/x is 0 correct
+rv from deleteDirectory /g is -2 correct
+rv from deleteDirectory /g/a is -2 correct
+rv from deleteDirectory /g/a/g is -2 correct
+rv from deleteDirectory /g/a/g/x is -1 correct
+rv from deleteFile /g/a/g/x is 0 correct
+rv from deleteDirectory /g/a/g is 0 correct
+rv from deleteDirectory /g/a is 0 correct
+rv from deleteDirectory /g is 0 correct
+
+ misc tests on directories fs1
+rv from lockFile /h is -4 correct
+rv from deleteFile /h is -3 correct
+rv from renameFile /h /x is -3 correct
+rv from renameFile /h /o is 0 correct
+rv from renameFile /e/a/a/m /e/a/a/z is 0 correct
+end of driver 3

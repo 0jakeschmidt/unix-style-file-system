@@ -1,0 +1,24 @@
+Driver 5 begins
+Fill a partition test! This assumes driver1-4 were run
+if there are minor differences, you will have some serious explaining to do!
+Begin filling fs2
+rv from createFile /o/o/o/a is 0 correct
+rv from openFile /o/o/o/a is 1 correct
+rv from writeFile /o/o/o/b is 600 correct write 600 Fs
+rv from writeFile /o/o/o/b is 600 correct write 600 Is
+rv from closeFile /o/o/o/b is 0 correct
+rv from createFile /o/o/o/b is 0 correct
+rv from openFile /o/o/o/b is 2 correct
+rv from writeFile is 600 correct write 600 Is
+rv from appendFile /o/o/o/b is 64 correct write 64 Ts
+rv from appendFile /o/o/o/b is 64 correct write 64 Fs
+rv from appendFile /o/o/o/b is 64 correct write 64 Is
+rv from closeFile /o/o/o/b is 0 correct
+rv from createFile /o/o/o/c is 0 correct
+rv from /o/o/o/c openFile is 3 correct
+rv from writeFile /o/o/o/c is 64 correct write 64 Ts
+rv from writeFile /o/o/o/c is 64 correct write 64 Fs
+rv from writeFile /o/o/o/c is -3 correct fs2 is full
+rv from appendFile /o/o/o/c is -3 correct fs2 is full
+rv from closeFile /o/o/o/c is 0 correct
+end driver 5

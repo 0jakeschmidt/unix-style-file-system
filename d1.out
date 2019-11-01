@@ -1,0 +1,109 @@
+driver 1 basic file system tests on fs1
+File create tests on fs1
+rv from createFile /a is 0 Correct
+rv from createFile /b is 0 Correct
+rv from createFile /a is -1 Correct file exists
+rv from createFile  a is -3 Correct file invalid
+rv from createFile aa is -3 Correct file invalid
+rv from createFile /$ is -3 Correct file invalid
+rv from createFile /c is 0 Correct
+rv from createFile /d is 0 Correct
+
+lock tests on fs1
+rv from lockFile /a is 1 Correct file locked
+rv from lockFile /a is -1 Correct file already locked
+rv from lockFile /g is -2 Correct file does not exist
+rv from unlockFile /g is -2 Correct file does not exist and bad lock
+rv from unlockFile /a is -1 Correct wrong lock id (10023)
+rv from unlockFile /a is 0 Correct file unlocked
+
+file open tests on fs1
+rv from openFile /c is 1 Correct file open (r) f1
+rv from openFile /d is 2 Correct file open (m) f2
+rv from openFile /b is 3 Correct file open (w) f3
+rv from openFile /j is -1 Correct file does not exist f4
+rv from openFile /d is 4 Correct file open again (r) f4
+rv from openFile /a is -3 Correct file open failed, bad lock id (1) and /a is not locked f5
+rv from openFile aa is -1 Correct file open failed wrong file name f5
+rv from openFile /a is -2 Correct file open failed, bad mode (b) f5
+
+file close tests on fs1
+rv from closeFile f1 /c is 0 Correct file closed f1
+rv from closeFile f1 /c is -1 Correct file closed failed f1
+rv from closeFile fileid 1000 is -1 Correct file closed failed bad descriptor
+
+file open and lock tests on fs1
+rv from lockFile /d is -3 Correct lock failed, file opened 
+rv from lockFile /a is 2 Correct file locked 
+rv from openFile /a is -3 Correct file opened failed locked, bad id 
+rv from openFile /a is 5 Correct file opened (r) f1 
+rv from closeFile f1 /a is 0 Correct file closed
+rv from unlockFile /a is 0 Correct file unlocked l2
+
+closing all the files on fs1
+rv from closeFile f2 /d is 0 Correct file closed
+rv from closeFile f3 /b is 0 Correct file closed
+rv from closeFile f4 /d is 0 Correct file closed
+
+open and write tests on fs1
+rv from openFile /a is 6 Correct file opened (w) f1 
+rv from openFile /b is 7 Correct file opened (m) f2 
+rv from writeFile /a f1 is 5 Correct wrote 5 s
+rv from writeFile /a f1 is 5 Correct wrote 5 b
+rv from writeFile /a f1 is 5 Correct wrote 5 K
+rv from writeFile /a f1 is 5 Correct wrote 5 M
+rv from appendFile /a f1 is 5 Correct wrote 5 s
+rv from writeFile /b f2 is 600 Correct wrote 600 M
+rv from openFile /a is 8 Correct file opened (r) f3 
+rv from writeFile /a f3 is -3 Correct open is r
+rv from appendFile /a f3 is -3 Correct open is r
+
+read tests on fs1
+rv from openFile /b is 9 Correct file opened (r) f4 
+rv from readFile /a f3 is 25 Correct file read 
+Data read is 
+sssssbbbbbKKKKKMMMMMsssss
+rv from readFile /a f3 is 0 Correct file read end of file
+Data read is 
+
+rv from readFile /b f4 is 65 Correct file read 
+Data read is 
+MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+rv from readFile /b f2 is 0 Correct file read end of file
+Data read is 
+
+rv from openFile /c is 10 Correct file opened (r) f5 
+rv from readFile /c f5 is 0 Correct file read 
+Data read is 
+
+
+Seek tests on fs1 (with read and writes)
+rv from seekFile /a f3 is 0 Correct rw set to 0
+rv from seekFile /a f3 is -1 Correct failed to set rw to -10
+rv from seekFile /a f3 is 0 Correct rw offset to 10
+rv from readFile /a f3 is 15 Correct file read to end of file
+Data read is 
+KKKKKMMMMMsssss
+rv from seekFile /b f2 is 0 Correct rw set to 0, seek of -600
+rv from writeFile /b f2 is 10 Correct wrote 10 M
+rv from writeFile /b f2 is 10 Correct wrote 10 K
+rv from writeFile /b f2 is 10 Correct wrote 10 b
+rv from writeFile /b f2 is 10 Correct wrote 10 s
+rv from readFile /b f2 is 10 Correct file read of 10 Ms
+Data read is 
+MMMMMMMMMM
+rv from seekFile /b f2 is 0 Correct rw set to 20, seek of -30
+rv from readFile /b f2 is 30 Correct file read 
+Data read is 
+bbbbbbbbbbssssssssssMMMMMMMMMM
+rv from seekFile /b f2 is 0 Correct rw set to 0
+rv from readFile /b f2 is 50 Correct file read 
+Data read is 
+MMMMMMMMMMKKKKKKKKKKbbbbbbbbbbssssssssssMMMMMMMMMM
+close everything we are done in driver 1
+rv from closeFile f1 /a is 0 Correct file closed
+rv from closeFile f2 /b is 0 Correct file closed
+rv from closeFile f3 /a is 0 Correct file closed
+rv from closeFile f4 /b is 0 Correct file closed
+rv from closeFile f5 /c is 0 Correct file closed
+end driver 1

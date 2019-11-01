@@ -1,0 +1,14 @@
+
+You can make the following simplifying assumptions in your project:
+
+1. The block size is 64 bytes.
+2. Reserve block number 0 for disk manager.
+3. There will never be more then 4 partitions
+
+
+What does readable mean?   You will always be able to read the DISK with a hex editor and all the numbers will appear.
+So if say your file-inodes has pionter to say disk block 12, then you will be able to see in 4bytes: 0012   Note the 4 bytes means for characters!
+
+What is the superblock and what do I do with it:
+1. if the superblock is blank (ie new DISK), then write the partition information to it.  For each partition, add the following info: Partition name, start block, end block (or size) 
+2. If the superblock is NOT blank, they read from it and ignore the drivers DiskPartition *dp = new DiskPartition[3]; inforamtion.  The data store on the DISK is correct.  We can't change the partitions after the fact.

@@ -1,0 +1,143 @@
+begin driver 4
+Directory and file creates on multiple fs
+rv from createDirectory /a fs1 is -4 correct file /a
+rv from createDirectory /e fs1 is -1 correct
+rv from createDirectory /e fs2 is 0 correct
+rv from createDirectory /e fs3 is 0 correct
+rv from createDirectory /e fs1 is -1 correct
+rv from createDirectory /f fs2 is 0 correct
+rv from createDirectory /f fs3 is 0 correct
+rv from createFile /e/f fs1 is 0 correct
+rv from createFile /m/f fs1 is -4 correct
+rv from createDirectory /e/b fs2 is 0 correct
+rv from createFile /e/b/a fs2 is 0 correct
+rv from createFile /e/c fs2 is 0 correct
+rv from createDirectory /e/b/d fs2 is 0 correct
+rv from createFile /e/b/d/x fs2 is 0 correct
+rv from createFile /e/b/d/x fs2 is-1 correct
+rv from createDirectory /e/b fs3 is 0 correct
+rv from createFile /e/b/a fs3 is 0 correct
+
+file writes/appends/reads and seeks on multiple fs
+rv from openFile /e/b/a w f1 fs2 is 1 correct
+rv from openFile /e/b/a m f2 fs2 is 2 correct
+rv from openFile /e/b/a m f3 fs3 is 2 correct
+rv from writeFile /e/b/a f1 is 5 Correct wrote 5 i
+rv from writeFile /e/b/a f3 is 5 Correct wrote 5 i
+rv from writeFile /e/b/a f1 is 5 Correct wrote 5 m
+rv from writeFile /e/b/a f3 is 5 Correct wrote 5 m
+rv from writeFile /e/b/a f1 is 5 Correct wrote 5 W
+rv from writeFile /e/b/a f3 is 5 Correct wrote 5 W
+rv from writeFile /e/b/a f1 is 5 Correct wrote 5 j
+rv from writeFile /e/b/a f3 is 5 Correct wrote 5 j
+rv from writeFile /e/b/a f1 is 5 Correct wrote 5 W
+rv from writeFile /e/b/a f1 is 5 Correct wrote 5 W
+rv from seekFile /e/b/a f2 is 0 Correct rw set to 4
+rv from writeFile /e/b/a f2 is 1 Correct wrote 1 j
+rv from seekFile /e/b/a f2 is 0 Correct rw set to 5
+rv from writeFile /e/b/a f2 is 1 Correct wrote 1 i
+rv from seekFile /e/b/a f2 is 0 Correct rw set to 6
+rv from writeFile /e/b/a f2 is 1 Correct wrote 1 m
+rv from seekFile /e/b/a f2 is 0 Correct rw set to 7
+rv from writeFile /e/b/a f2 is 1 Correct wrote 1 w
+rv from appendFile /e/b/a f2 is 1 Correct wrote 1 j
+rv from appendFile /e/b/a f2 is 1 Correct wrote 1 i
+rv from appendFile /e/b/a f2 is 1 Correct wrote 1 m
+rv from appendFile /e/b/a f2 is 1 Correct wrote 1 w
+rv from closeFile /e/b/a f1 fs2 is 0 Correct
+rv from sekerFile /e/b/a /e/b/a fs2  is -2 correct -100 before begin
+rv from seekFile /e/b/a f2 is 0 Correct rw set to 0
+rv from readFile /e/b/a fs2 is 29 Correct 
+Data read is 
+iiiijimWmmWWWWWjjjjjWWWWWjimW
+rv from seekFile /e/b/a f3 is 0 Correct rw set to 0
+rv from readFile /e/b/a fs3 is 25 Correct 
+Data read is 
+iiiiimmmmmWWWWWjjjjjWWWWW
+rv from closeFile /e/b/a f2 fs2 is 0 Correct
+rv from closeFile /e/b/a f3 fs3 is 0 Correct
+
+delete tests, with open and locks
+rv from createDirectory /n fs2 is 0 correct
+rv from createDirectory /n/n fs2 is 0 correct
+rv from createDirectory /o fs2 is 0 correct
+rv from createDirectory /o/o fs2 is 0 correct
+rv from createDirectory /o/o/o fs2 is 0 correct
+rv from createDirectory /o/o/o/a fs2 is 0 correct
+rv from createDirectory /o/o/o/a/a fs2 is 0 correct
+rv from createFile /o/o/o/a/a/z fs3 is 0 correct 
+rv from createDirectory /n fs3 is 0 correct
+rv from createDirectory /n/n fs3 is 0 correct
+rv from createDirectory /o fs3 is 0 correct
+rv from createDirectory /o/o fs3 is 0 correct
+rv from createDirectory /o/o/o fs3 is 0 correct
+rv from createDirectory /o/o/o/a fs3 is 0 correct
+rv from createDirectory /o/o/o/a/a fs3 is 0 correct
+rv from createFile /o/o/o/a/a/z fs3 is 0 correct 
+rv from createFile /o/o/o/a fs2 is -4 correct 
+rv from createFile /o/o/o/a fs3 is -4 correct 
+rv from createFile /o/o/o/a/b fs2 is 0 correct 
+rv from createDirectory /o/o/o/a/c fs2 is 0 correct
+rv from createFile /o/o/o/a/d fs2 is 0 correct 
+rv from createFile /o/o/o/a/e fs2 is 0 correct 
+rv from createFile /o/o/o/a/f fs2 is 0 correct 
+rv from createFile /o/o/o/a/g fs2 is 0 correct 
+rv from createFile /o/o/o/a/h fs2 is 0 correct 
+rv from createFile /o/o/o/a/i fs2 is 0 correct 
+rv from createFile /o/o/o/a/j fs2 is 0 correct 
+rv from createDirectory /o/o/o/a/k fs2 is 0 correct
+rv from createFile /o/o/o/a/l fs2 is 0 correct 
+rv from createFile /o/o/o/a/b fs3 is 0 correct 
+rv from createDirectory /o/o/o/a/c fs3 is 0 correct
+rv from createFile /o/o/o/a/d fs3 is 0 correct 
+rv from createFile /o/o/o/a/e fs3 is 0 correct 
+rv from createFile /o/o/o/a/f fs3 is 0 correct 
+rv from createFile /o/o/o/a/g fs3 is 0 correct 
+rv from createFile /o/o/o/a/h fs3 is 0 correct 
+rv from createFile /o/o/o/a/i fs3 is 0 correct 
+rv from createFile /o/o/o/a/j fs3 is 0 correct 
+rv from createDirectory /o/o/o/a/k fs3 is 0 correct
+rv from createFile /o/o/o/a/l fs3 is 0 correct 
+rv from lockFile /o/o/o/a/h fs2 is 1 correct
+rv from lockFile /o/o/o/a/h fs3 is 1 correct
+rv from openFile /o/o/o/a/b fs2 is 3 correct
+rv from openFile /o/o/o/a/b fs3 is 2 correct
+rv from renameFile /o/o/o/a/b fs2 to /o/o/o/a/x is -4 correct
+rv from renameFile /o/o/o/a/b fs3 to /o/o/o/a/x is -4 correct
+rv from renameFile /o/o/o/a/b to /o/o/o/a/x fs2 is -4 correct
+rv from renameFile /o/o/o/a/b to /o/o/o/a/x fs3 is -4 correct
+rv from deleteDirectory /o/o/o fs2 is -2 correct
+rv from deleteDirectory /o/o/o fs3 is -2 correct
+rv from deleteFile /o/o/o fs2 is -3 correct
+rv from deleteFile /o/o/o fs3 is -3 correct
+rv from deleteFile /o/o/o/a/b fs2 is -2 correct
+rv from deleteFile /o/o/o/a/b fs3 is -2 correct
+rv from closeFile /o/o/o/a/b f1 fs2 is 0 Correct
+rv from closeFile /o/o/o/a/b f2 fs3 is 0 Correct
+rv from deleteFile /o/o/o/a/b fs2 is 0 correct
+rv from deleteDirectory /o/o/o/a/c fs2 is 0 correct
+rv from deleteFile /o/o/o/a/d fs2 is 0 correct
+rv from deleteFile /o/o/o/a/e fs2 is 0 correct
+rv from deleteFile /o/o/o/a/f fs2 is 0 correct
+rv from deleteFile /o/o/o/a/g fs2 is 0 correct
+rv from deleteFile /o/o/o/a/h fs2 is -2 correct
+rv from unlockFile /o/o/o/a/h fs2 is 0 correct
+rv from unlockFile /o/o/o/a/h fs3 is 0 correct
+rv from deleteFile /o/o/o/a/h fs2 is 0 correct
+rv from deleteFile /o/o/o/a/i fs2 is 0 correct
+rv from deleteFile /o/o/o/a/j fs2 is 0 correct
+rv from deleteDirectory /o/o/o/a/k fs2 is 0 correct
+rv from deleteFile /o/o/o/a/l fs2 is 0 correct
+rv from deleteDirectory /o/o/o/a/a fs2 is -2 correct
+rv from deleteFile /o/o/o/a/a/z fs2 is 0 correct
+rv from deleteDirectory /o/o/o/a/a fs2 is 0 correct
+
+rename tests
+rv from renameFile /o/o/o/a/a /o/o/o/a/z fs2 is -2 correct
+rv from renameFile /o/o/o/a/a /o/o/o/a/z fs3 is 0 correct
+rv from renameFile /o/o/o/a /o/o/o/z fs3 is 0 correct
+rv from createDirectory /o/o/o/z fs3 is -1 correct
+rv from deleteDirectory /o/o/o/a fs2 is -1 correct
+rv from deleteDirectory /o/o/o/z fs2 is 0 correct
+rv from deleteDirectory /o/o/o/z fs3 is -2 correct
+End of driver 4

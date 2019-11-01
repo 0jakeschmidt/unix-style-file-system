@@ -1,0 +1,37 @@
+There is a makefile for this project. 
+So if you need to make say driver1, the command is make driver1
+if you want to make everything: make all
+2 are not in the all:
+The bitvector_driver for testing
+make bitvector_driver
+and to test with your own driver, edit the driver.cpp 
+make driver
+
+make clean     to clean up (and before commits, so no .o file and complied code, and/or DISK1)
+
+Compile these files manually:
+g++ -c bitvector.cpp
+g++ -c disk.cpp
+g++ -c diskmanager.cpp
+g++ -c partitionmanager.cpp
+g++ -c filesystem.cpp
+
+g++ -o driver1 driver1.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o 
+
+g++ -o driver2 driver2.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o 
+
+g++ -o driver3 driver3.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o 
+
+g++ -o driver4 driver4.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o 
+
+g++ -o driver5 driver5.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o 
+
+g++ -o driver6 driver6.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o 
+
+g++ -o driver driver.cpp bitvector.o disk.o diskmanager.o partitionmanager.o filesystem.o 
+
+To test the bitvector, you can use the bitvector_driver.cpp
+g++ bitvector_driver.cpp bitvector.o -o bitvector_driver
+
+
+

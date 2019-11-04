@@ -1,0 +1,15 @@
+DISK
+disk class will fake disk
+all we have to do is read it
+bit vector- keep track of empty blocks on system
+on startup- format and fill bit vector
+no warnings
+disk manager is important
+
+when in the linux machines:
+ghex to read the files system
+3 partitions: abc
+will never be able to read bit vector: store len of filesystem in bits
+#'s are blanks
+dont change drivers except driver6
+dont change Disk

@@ -12,6 +12,15 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
 
   /* If needed, initialize the disk to keep partition information */
   diskP = new DiskPartition[partCount];
+  if(r == 1){
+    //we need to write partition info to the super 
+    //block: part count and array of partitions (dp)
+  }else if(r == 0){
+    //read back part info into the diskmanger
+    //call readDiskBlock in disk.cpp 
+    //buffer gets populated which has partition information
+    //init disk partition
+  }
   /* else  read back the partition information from the DISK1 */
 
 }
@@ -26,6 +35,7 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
 int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
 {
   /* write the code for reading a disk block from a partition */
+  
 }
 
 

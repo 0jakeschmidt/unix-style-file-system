@@ -1,28 +1,65 @@
 #include "disk.h"
 #include "diskmanager.h"
+#include "util.h"
+
 #include <iostream>
+
 using namespace std;
 
 DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
 {
   myDisk = d;
-  partCount= partcount;
+  partCount = partcount;
   int r = myDisk->initDisk();
-  char buffer[64];
+  char buffer[64]; 
 
-  /* If needed, initialize the disk to keep partition information */
-  diskP = new DiskPartition[partCount];
-  if(r == 1){
-    //we need to write partition info to the super 
-    //block: part count and array of partitions (dp)
-  }else if(r == 0){
-    //read back part info into the diskmanger
-    //call readDiskBlock in disk.cpp 
-    //buffer gets populated which has partition information
-    //init disk partition
+  // Initialize the buffer to 64 '#'s
+  for(int i = 0; i < 64; i++)
+  {
+    buffer[i] = '#';
   }
-  /* else  read back the partition information from the DISK1 */
 
+  diskP = new DiskPartition[partCount];
+
+  // r == 1 indicates that a new disk file was created
+  if(r == 1)
+  {
+    // Write the number of partitions to the disk's superblock buffer
+    writeIntToBuffer(0, partCount, buffer);
+
+    for(int i = 0; i < partCount; i++)
+    {
+      diskP[i].partitionName = dp[i].partitionName;
+      diskP[i].partitionSize = dp[i].partitionSize;
+
+      // The 4 is to account for the partCount already in the buffer
+      // Each partition name is 1 character and each partition size
+      // is 4 characters so we offset by (i*5)
+
+      // Write the single character partition name to the buffer
+      buffer[4 + (i * 5)] = diskP[i].partitionName;
+
+      // Write the partition size to the buffer
+      writeIntToBuffer(4 + ((i * 5) + 1), diskP[i].partitionSize, buffer);
+    }
+
+    myDisk->writeDiskBlock(0, buffer);
+  }
+  else if(r == 0)
+  {
+    // Populate buffer from disk file
+    myDisk->readDiskBlock(0, buffer);
+
+    // Read the partition count from the first 4 charactets of the buffer
+    partCount = readIntFromBuffer(0, buffer);
+
+    for(int i = 0; i < partCount; i++)
+    {
+      // Using the same offsets as when writing the superblock
+      diskP[i].partitionName = buffer[4 + (i * 5)];
+      diskP[i].partitionSize = readIntFromBuffer(4 + ((i * 5) + 1), buffer);
+    }
+  }
 }
 
 /*
@@ -34,8 +71,22 @@ DiskManager::DiskManager(Disk *d, int partcount, DiskPartition *dp)
  */
 int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
 {
-  /* write the code for reading a disk block from a partition */
-  
+  int absoluteBlock = getAbsoluteBlock(diskP, partCount, partitionname, blknum);
+
+  // Indicates that the partition doesn't exist
+  if(absoluteBlock == -1)
+  {
+    return -3;
+  }
+
+  int diskRead = myDisk->readDiskBlock(absoluteBlock, blkdata);
+
+  if(diskRead != 0)
+  {
+    return diskRead;
+  }
+
+  return 0;
 }
 
 
@@ -48,7 +99,22 @@ int DiskManager::readDiskBlock(char partitionname, int blknum, char *blkdata)
  */
 int DiskManager::writeDiskBlock(char partitionname, int blknum, char *blkdata)
 {
-  /* write the code for writing a disk block to a partition */
+  int absoluteBlock = getAbsoluteBlock(diskP, partCount, partitionname, blknum);
+
+  // Indicates that the partition doesn't exist
+  if(absoluteBlock == -1)
+  {
+    return -3;
+  }
+
+  int diskRead = myDisk->writeDiskBlock(absoluteBlock, blkdata);
+
+  if(diskRead != 0)
+  {
+    return diskRead;
+  }
+
+  return 0;
 }
 
 /*
@@ -57,5 +123,13 @@ int DiskManager::writeDiskBlock(char partitionname, int blknum, char *blkdata)
  */
 int DiskManager::getPartitionSize(char partitionname)
 {
-  /* write the code for returning partition size */
+  for(int i = 0; i < partCount; i++)
+  {
+    if(diskP[i].partitionName == partitionname)
+    {
+      return diskP[i].partitionSize;
+    }
+  }
+
+  return -1;
 }

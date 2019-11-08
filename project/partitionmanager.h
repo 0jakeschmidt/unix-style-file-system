@@ -1,6 +1,6 @@
 class PartitionManager {
   DiskManager *myDM;
-
+  BitVector *myBV;
 
   public:
     char myPartitionName;

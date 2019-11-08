@@ -1,5 +1,6 @@
 #include "disk.h"
 #include "diskmanager.h"
+#include "bitvector.h"
 #include "partitionmanager.h"
 #include "filesystem.h"
 #include <time.h>

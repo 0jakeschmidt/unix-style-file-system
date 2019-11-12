@@ -38,7 +38,15 @@ PartitionManager::~PartitionManager()
  */
 int PartitionManager::getFreeDiskBlock()
 {
+  int blocknum = -1;
   /* write the code for allocating a partition block */
+  for(int i = 0; i < myPartitionSize; i++){
+    if(myBV->testBit(i) == 0){
+      blocknum = i;
+      break;
+    };
+  }
+  return blocknum;
 }
 
 /*
@@ -47,6 +55,7 @@ int PartitionManager::getFreeDiskBlock()
 int PartitionManager::returnDiskBlock(int blknum)
 {
   /* write the code for deallocating a partition block */
+  myBV->resetBit(blknum);
  }
 
 

@@ -22,7 +22,7 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
   if(buff[0] == '#'){
     myBV->setBit(0);
     myBV->setBit(1);
-    myBV->getBitVector((unsigned int*) buff);
+    _writeBitVector();
   }else {
     myBV->setBitVector((unsigned int*) buff);
   }
@@ -31,6 +31,13 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
 
 PartitionManager::~PartitionManager()
 {
+}
+
+void PartitionManager::_writeBitVector()
+{
+  char buffer[64];
+  myBV->getBitVector((unsigned int*) buffer);
+  myDM->writeDiskBlock(myPartitionName, 0, buffer);
 }
 
 /*
@@ -56,6 +63,7 @@ int PartitionManager::returnDiskBlock(int blknum)
 {
   /* write the code for deallocating a partition block */
   myBV->resetBit(blknum);
+  _writeBitVector();
  }
 
 

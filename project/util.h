@@ -3,8 +3,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "diskmanager.h"
-
 using namespace std;
 
 /*

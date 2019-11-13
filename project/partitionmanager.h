@@ -2,6 +2,8 @@ class PartitionManager {
   DiskManager *myDM;
   BitVector *myBV;
 
+  void _writeBitVector();
+
   public:
     char myPartitionName;
     int myPartitionSize;

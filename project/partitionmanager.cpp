@@ -33,11 +33,11 @@ PartitionManager::~PartitionManager()
 {
 }
 
-void PartitionManager::_writeBitVector()
+int PartitionManager::_writeBitVector()
 {
   char buffer[64];
   myBV->getBitVector((unsigned int*) buffer);
-  myDM->writeDiskBlock(myPartitionName, 0, buffer);
+  return myDM->writeDiskBlock(myPartitionName, 0, buffer);
 }
 
 /*
@@ -63,7 +63,7 @@ int PartitionManager::returnDiskBlock(int blknum)
 {
   /* write the code for deallocating a partition block */
   myBV->resetBit(blknum);
-  _writeBitVector();
+  return _writeBitVector() < 0 ? -1 : 0;
  }
 
 

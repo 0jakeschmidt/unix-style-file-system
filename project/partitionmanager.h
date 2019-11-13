@@ -1,3 +1,4 @@
+class BitVector;
 class PartitionManager {
   DiskManager *myDM;
   BitVector *myBV;

@@ -133,3 +133,9 @@ int DiskManager::getPartitionSize(char partitionname)
 
   return -1;
 }
+
+int DiskManager::getBlockSize()
+{
+  return myDisk->getBlockSize();
+}
+

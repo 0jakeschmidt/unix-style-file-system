@@ -20,7 +20,7 @@ class DiskManager {
     ~DiskManager();
     int readDiskBlock(char partitionname, int blknum, char *blkdata);
     int writeDiskBlock(char partitionname, int blknum, char *blkdata);
-    int getBlockSize() {return myDisk->getBlockSize();};
+    int getBlockSize();
     int getPartitionSize(char partitionname);
 };
 

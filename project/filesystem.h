@@ -27,7 +27,8 @@ class FileSystem {
     int searchForFile(int start,char *fileName, int); // returns -1 if the file doesnt exsist, otherwise it returns blk number for file i-node
     int getFreePointer(int blockNum);// returns a free pointer when given blocknumber 
     void createBlankfile(char* buff, char name); // files a buffer with name in correct spot and file type, all pointers blank
-
+    void createBlankDirectory(char* buuf,char name);// creates a blank directory with something in each spot for file names and types 
+    void placeInDirectory(char name, int blkNum, char type, char* subDirectoryName, int subdirecNameLen);
 
 
     /* declare other public members here */

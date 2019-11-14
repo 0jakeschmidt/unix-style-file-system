@@ -50,6 +50,7 @@ int PartitionManager::getFreeDiskBlock()
   for(int i = 0; i < myPartitionSize; i++){
     if(myBV->testBit(i) == 0){
       blocknum = i;
+      myBV->setBit(i);
       break;
     };
   }

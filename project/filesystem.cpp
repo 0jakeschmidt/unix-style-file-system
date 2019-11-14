@@ -64,11 +64,10 @@ int FileSystem::createFile(char *filename, int fnameLen)
 			//2 cases
 			if (fnameLen == 2)
 			{	// it belongs in root 
-				char fname = filename[fnameLen-1];
+			/*	char fname = filename[fnameLen-1];
 			
 				// set it to be written to the directory
 				int position = getFreePointer(1);
-			
 				// get the data in root into a buffer
 				myPM->readDiskBlock(1,directBuff);
 	
@@ -81,36 +80,17 @@ int FileSystem::createFile(char *filename, int fnameLen)
 				directBuff[position+4] = 'f';
 				myPM->writeDiskBlock(1,directBuff);
 
-		
+		*/
+				char root[1];
+				root[0] = '/';
+				placeInDirectory(name, blkNum,'f',root , 1);
 				// actually writes the buffer to a block
 				int status = myPM->writeDiskBlock(blkNum, buff);
 			  	return status;
 			}
 			else if (fnameLen >=4)
 			{
-				// it belongs in different directory only need second to last pair ie. 
-				// file name '/a/b/c/d' -> the directory it needs placed in is /c
-				char path[fnameLen-2];
-
-				for(int j=0; j<fnameLen-2;j++)
-				{
-					path[j] = filename[j];
-				}
-				int location = searchForFile(1,path,fnameLen-2);
-
-				char fname = filename[fnameLen-1];
-			
-				
-				// set it to be written to the directory
-				int position = getFreePointer(location);
-				// get the data in root into a buffer
-				myPM->readDiskBlock(location,directBuff);
-				// write the position of the file-I-node to the buffer
-				directBuff[position-1] = fname; 
-				writeIntToBuffer(position, blkNum, directBuff);
-				directBuff[position+4] = 'f';
-
-				myPM->writeDiskBlock(location,directBuff);
+				placeInDirectory(name, blkNum,'f', filename, fnameLen);
 				int status = myPM->writeDiskBlock(blkNum, buff);
 				return status;
 			}
@@ -122,97 +102,37 @@ int FileSystem::createFile(char *filename, int fnameLen)
 int FileSystem::createDirectory(char *dirname, int dnameLen)
 {
 	char buff[64];
-	int writePoint=0;
+	
 	char name = dirname[dnameLen-1];
 
-	if(dirname[0] != '/' ){
+	if(dirname[0] != '/' )
+	{
 		return -3;
 	}
-	//if((name < 'a' || name > 'z') && (name < 'A' || name > 'Z')){
-	//	return -3;
-	//}
+	//if((name < 'a' || name > 'z') && (name < 'A' || name > 'Z') && (name != '/'))
+	//{
+//		return -3;
+//	}
 	//return -1 if the file exsists
-	if(searchForFile(1,dirname, dnameLen) > 0){
+	if(searchForFile(1,dirname, dnameLen) > 0)
+	{
 		return -1;
 	}
 	
 	// write name to buffer
-	buff[writePoint] = name;
-	//incrementWritePointer
-	writePoint++;
-	writeIntToBuffer(writePoint,1234,buff);
-	writePoint+=4;
-	buff[writePoint] ='d';
-	writePoint++;
-	
-	for(int i= 0; i<9;i++){
-	//write the pointers blank
-		buff[writePoint] = '#';
-		writePoint++;
-		writeIntToBuffer(writePoint,0,buff);
-		
-		// update write point for 4 bytes
-		writePoint+=4;
-		//write file type as z so its blank
-		buff[writePoint] = 'z';
-		
-		writePoint++;
+	createBlankDirectory(buff,name);
+	if(name == '/')
+	{
+		myPM->writeDiskBlock(1, buff);
+		return 0;
 	}
-
-	// write for the inode link 
-	
-	writeIntToBuffer(writePoint,0,buff);
 	
 	int blkNum = myPM->getFreeDiskBlock();
-	myPM->writeDiskBlock(1, buff);
+	myPM->writeDiskBlock(blkNum, buff);
 
-
+	placeInDirectory(name,blkNum, 'd', dirname, dnameLen);
 	//this handles the writing of the block to the actual disk
-	/*
-	if(name != '/'){
-		//get block number 
-		
-		char directBuff[64];
-		if (dnameLen == 2)
-			{	// it belongs in root 
-				char dname [1];
-				dname[0] = '/';
-				// set it to be written to the directory
-				int position = getFreePointer(1);
-				// get the data in root into a buffer
-				myPM->readDiskBlock(1,directBuff);
-				// write the position of the file-I-node to the buffer
-				writeIntToBuffer1(position, blkNum, directBuff);
-				directBuff[position+4] = 'd';
-				myPM->writeDiskBlock(1,directBuff);
 
-				int status = myPM->writeDiskBlock(blkNum, buff);
-			  	return status;
-			}
-			else if (dnameLen >=4)
-			{
-				// it belongs in different directory only need second to last pair ie. 
-				// file name '/a/b/c/d' -> the directory it needs placed in is /c
-				char dname [1];
-				dname[0] =  dirname[dnameLen-4];
-				int dirBlock = searchForFile(1,dname,1);
-				// set it to be written to the directory
-				int position = getFreePointer(dirBlock);
-				// get the data in root into a buffer
-				myPM->readDiskBlock(dirBlock,directBuff);
-				// write the position of the file-I-node to the buffer
-				writeIntToBuffer1(position, blkNum, directBuff);
-				directBuff[position+4] = 'd';
-
-				myPM->writeDiskBlock(dirBlock,directBuff);
-				int status = myPM->writeDiskBlock(blkNum, buff);
-				return status;
-			}
-
-
-
-	}
-	*/
 
 
 }
@@ -348,7 +268,7 @@ int FileSystem::getFreePointer(int blockNum)
 }
 void FileSystem::createBlankfile(char* buff, char name)
 {
-	int writePoint=0;
+		int writePoint=0;
 			buff[writePoint] =name; 
 			writePoint++;
 			// write f for file type 
@@ -377,4 +297,77 @@ void FileSystem::createBlankfile(char* buff, char name)
 			writePoint++;
 			}
 }
+void FileSystem::createBlankDirectory(char* buff,char name)
+{
+	int writePoint=0;
+	buff[writePoint] = name;
+	//incrementWritePointer
+	writePoint++;
+	writeIntToBuffer(writePoint,1234,buff);
+	writePoint+=4;
+	buff[writePoint] ='d';
+	writePoint++;
+	
+	for(int i= 0; i<9;i++){
+	//write the pointers blank
+		buff[writePoint] = '#';
+		writePoint++;
+		writeIntToBuffer(writePoint,0,buff);
+		
+		// update write point for 4 bytes
+		writePoint+=4;
+		//write file type as z so its blank
+		buff[writePoint] = 'z';
+		
+		writePoint++;
+	}
 
+	// write for the inode link 
+	
+	writeIntToBuffer(writePoint,0,buff);
+}
+
+void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDirectoryName, int subdirecNameLen)
+{
+	// pass this the name of the file
+	// the blknum for the i-node, 
+	//type, so 'd' or 'f'
+	// and name of sub directory, so /a/b/c/d -> pass it c and this places d into c
+		char directBuff[64];
+
+			if(subdirecNameLen == 1)
+			{
+				// set it to be written to the directory
+				int position = getFreePointer(1);
+				// get the data in root into a buffer
+				myPM->readDiskBlock(1,directBuff);
+				// write the position of the file-I-node to the buffer
+				directBuff[position] = name; 
+				position++;
+				writeIntToBuffer(position, blkNum, directBuff);
+				directBuff[position+4] = type;
+				myPM->writeDiskBlock(1,directBuff);
+			}
+			else{
+
+				// it belongs in different directory 
+				// file name '/a/b/c/d' -> the directory it needs placed in is /c
+				char sub[subdirecNameLen-2];
+				for (int i = 0; i < subdirecNameLen-2; ++i)
+				{
+					sub[i] = subDirectoryName[i];
+				}
+				int direcNum = searchForFile(1,sub,subdirecNameLen-2);
+				int position = getFreePointer(direcNum);
+				// get the data in root into a buffer
+				myPM->readDiskBlock(direcNum,directBuff);
+				// write the position of the file-I-node to the buffer
+				directBuff[position] = name; 
+				position++;
+				writeIntToBuffer(position, blkNum, directBuff);
+				directBuff[position+4] = type;
+				myPM->writeDiskBlock(1,directBuff);
+				
+			}
+
+}

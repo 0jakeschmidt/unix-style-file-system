@@ -1,11 +1,12 @@
 #include <map>
-#include <vector>
 
 struct FileInfo
 {
-  int opens = 0;
-  int lockId = -1;
-  int rwPointer = 0;
+  int opens, lockId;
+
+  // Associations from file descriptors to rw pointers, modes
+  std::map<int, int>*  rwPointers;
+  std::map<int, char>* modes;
 };
 
 class FileSystem {
@@ -17,6 +18,9 @@ class FileSystem {
   
   // An association from block numbers to FileInfo instances
   std::map<int, FileInfo*> fileInfo;
+
+  FileInfo* _initFileInfo(int block);
+  int       _makeFileDescriptor(char* filename, int fnameLen, int offset);
 
   public:
     FileSystem(DiskManager *dm, char fileSystemName);

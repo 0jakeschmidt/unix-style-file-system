@@ -11,6 +11,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <utility>
+#include <assert.h>
 
 using namespace std;
 
@@ -38,8 +39,46 @@ FileSystem::~FileSystem()
 {
   for(auto it = fileInfo.begin(); it != fileInfo.end(); it++)
   {
+    delete it->second->rwPointers;
+    delete it->second->modes;
     delete it->second;
   }
+}
+
+FileInfo* FileSystem::_initFileInfo(int block)
+{
+  assert(fileInfo.find(block) == fileInfo.end());
+
+  FileInfo* info = new FileInfo();
+
+  info->lockId = -1;
+  info->opens = 0;
+  info->rwPointers = new map<int, int>();
+  info->modes = new map<int, char>();
+
+  fileInfo.insert(make_pair(block, info));
+
+  return info;
+}
+
+int FileSystem::_makeFileDescriptor(char* filename, int fnameLen, int offset)
+{
+  long result = time(NULL) + offset;
+
+  int hash  = 0x811c9dc5;
+  int prime = 0x1000193;
+
+  for(int i = 0; i < fnameLen; i++)
+  {
+    if(filename[i] != '/')
+    {
+      unsigned short value = filename[i];
+      hash = hash ^ value;
+      hash *= prime;
+    }
+  }
+
+  return static_cast<int>(result - hash);
 }
 
 int FileSystem::createFile(char *filename, int fnameLen)
@@ -151,21 +190,16 @@ int FileSystem::lockFile(char *filename, int fnameLen)
     return -2;
   }
 
+  FileInfo* info;
+
   // If the file info table does not have info on this block
   if(fileInfo.find(block) == fileInfo.end())
   {
-    FileInfo* info = new FileInfo();
-
-    // TODO(jordan): Should this always assign the same lock ID? 
-    info->lockId = 1;
-
-    fileInfo.insert(make_pair(block, info));
-
-    return info->lockId;
+    info = _initFileInfo(block);
   }
   else
   {
-    FileInfo* info = fileInfo[block];
+    info = fileInfo[block];
 
     // The file is currently open somewhere
     if(info->opens != 0)
@@ -178,15 +212,12 @@ int FileSystem::lockFile(char *filename, int fnameLen)
     {
       return -1;
     }
-
-    info->lockId = 1;
-
-    return info->lockId;
   }
 
-  // There is no way for this to be reached but it's part of the function
-  // description
-  return -4;
+  // Not sure if this should always be 1
+  info->lockId = 1;
+
+  return info->lockId;
 }
 
 // 0  -> Success
@@ -227,14 +258,87 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 
 }
 
+// >0 -> Success
+// -1 -> File doesn't exist
+// -2 -> Invalid mode
+// -3 -> Locking restrictions
+// -4 -> Any other error
 int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
 {
+  // Invalid mode
+  if(mode != 'r' && mode != 'w' && mode != 'm')
+  {
+    return -2;
+  }
 
+  int block = searchForFile(1, filename, fnameLen);
+
+  // File doesn't exist
+  if(block == -1)
+  {
+    return -1;
+  }
+
+  FileInfo* info;
+
+  if(fileInfo.find(block) == fileInfo.end())
+  {
+    info = _initFileInfo(block);
+  }
+  else
+  {
+    info = fileInfo[block];
+
+    if(info->lockId != lockId)
+    {
+      return -3;
+    }
+  }
+
+  info->opens++;
+
+  int fd = _makeFileDescriptor(filename, fnameLen, info->opens);
+
+  info->modes->insert(make_pair(fd, mode));
+  info->rwPointers->insert(make_pair(fd, 0));
+
+  return fd;
 }
 
+// 0  -> Success
+// -1 -> Invalid desc
+// -2 -> Other errors
 int FileSystem::closeFile(int fileDesc)
 {
+  bool descriptorFound = false;
 
+  for(auto it = fileInfo.begin(); it != fileInfo.end(); it++)
+  {
+    FileInfo* info = it->second;
+
+    if(info->rwPointers->find(fileDesc) != info->rwPointers->end())
+    {
+      // The file descriptor matches an actual file
+      descriptorFound = true;
+
+      if(info->opens > 0)
+      {
+        // These three things are the actual action of "closing" a file
+        info->opens--;
+        info->rwPointers->erase(fileDesc);
+        info->modes->erase(fileDesc);
+
+        return 0;
+      }
+    }
+  }
+
+  if(!descriptorFound)
+  {
+    return -1;
+  }
+
+  return -2;
 }
 
 int FileSystem::readFile(int fileDesc, char *data, int len)
@@ -281,9 +385,15 @@ int FileSystem::searchForFile(int start,char *fileName, int len){
   //grab root and look for directory if name is longer, else if last char search for file name.
   int nextBlock=1;
 
+  // Ensure that the first character is always a / for the root directory
+  if(fileName[0] != '/')
+  {
+    return -1;
+  }
+
     // if name is /a/b/c/d
     //           
-    char name= fileName[1];
+    char name = fileName[1];
     
     // grabbed the root;
     myPM->readDiskBlock(start,buff); 
@@ -306,7 +416,6 @@ int FileSystem::searchForFile(int start,char *fileName, int len){
           for(int j=0; j<len-2; j++)
           {
             newName[j]=fileName[j+2];
-
           }
         
           return searchForFile(nextBlock,newName,len-2);

@@ -37,7 +37,8 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
 
 FileSystem::~FileSystem()
 {
-  for(auto it = fileInfo.begin(); it != fileInfo.end(); it++)
+  map<int, FileInfo*>::iterator it;
+  for(it = fileInfo.begin(); it != fileInfo.end(); it++)
   {
     delete it->second->rwPointers;
     delete it->second->modes;
@@ -83,7 +84,8 @@ int FileSystem::_makeFileDescriptor(char* filename, int fnameLen, int offset)
 
 FileInfo* FileSystem::_getInfoFromDescriptor(int fileDesc)
 {
-  for(auto it = fileInfo.begin(); it != fileInfo.end(); it++)
+  map<int, FileInfo*>::iterator it;
+  for(it = fileInfo.begin(); it != fileInfo.end(); it++)
   {
     FileInfo* info = it->second;
 
@@ -93,14 +95,14 @@ FileInfo* FileSystem::_getInfoFromDescriptor(int fileDesc)
     }
   }
 
-  return nullptr;
+  return NULL;
 }
 
 char FileSystem::_getModeFromDescriptor(int fileDesc)
 {
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
 
-  if(info == nullptr)
+  if(info == NULL)
   {
     return '\0';
   }
@@ -112,7 +114,7 @@ int FileSystem::_getRWFromDescriptor(int fileDesc)
 {
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
 
-  if(info == nullptr)
+  if(info == NULL)
   {
     return -1;
   }
@@ -125,14 +127,14 @@ void FileSystem::_setRWFromDescriptor(int fileDesc, int rw)
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
 
   // NOTE: Fails silently
-  if(info == nullptr)
+  if(info == NULL)
   {
     return;
   }
 
-  auto iterator = info->rwPointers->find(fileDesc);
+  map<int, int>::iterator iter = info->rwPointers->find(fileDesc);
 
-  iterator->second = rw;
+  iter->second = rw;
 }
 
 int FileSystem::createFile(char *filename, int fnameLen)
@@ -366,7 +368,7 @@ int FileSystem::closeFile(int fileDesc)
 {
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
 
-  if(info != nullptr)
+  if(info != NULL)
   {
     if(info->opens > 0)
     {

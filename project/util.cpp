@@ -2,7 +2,8 @@
 
 #include <cstdlib>
 #include <iostream>
-
+#include <fstream>
+#include <cstdlib>
 #include "diskmanager.h"
 #include "disk.h"
 
@@ -63,10 +64,10 @@ void printBuffer(char* buff, int size)
 {
   for (int i = 0; i < size; i++)
   {
-    cout << buff[i];
+    printf("%c", buff[i]);
   }
 
-  cout << "\n";
+  printf("\n");
 }
 
 int getAbsoluteBlock(DiskPartition* partitions, int partitionCount, int partitionName, int relativeBlock)

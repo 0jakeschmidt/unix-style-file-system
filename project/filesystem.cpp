@@ -70,7 +70,7 @@ int FileSystem::createFile(char *filename, int fnameLen)
 
 				char root[1];
 				root[0] = '/';
-				placeInDirectory(name, blkNum,'f',root , 1);
+				placeInDirectory(name, blkNum,'f',root , 2);
 				// actually writes the buffer to a block
 				int status = myPM->writeDiskBlock(blkNum, buff);
 			  	return status;
@@ -111,6 +111,7 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
 	{
 		
 		createBlankDirectory(buff,name);
+		
 		myPM->writeDiskBlock(1, buff);
 		return 0;
 	}
@@ -120,10 +121,10 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
 		//not enough disk space
 		return -2;
 	}
-	
+	createBlankDirectory(buff,name);
 	
 	myPM->writeDiskBlock(blknum, buff);
-
+	
 	placeInDirectory(name,blknum, 'd', dirname, dnameLen);
 	return 0;
 	//this handles the writing of the block to the actual disk
@@ -240,6 +241,7 @@ int FileSystem::getFreePointer(int blockNum)
 	// takes a blk number and returns the pos of free pointers 
 	char buff[64];
 	myPM->readDiskBlock(blockNum, buff);
+	
 	// two cases, either a file-inode or directory i-node
 	char type = buff[1];
 
@@ -296,9 +298,10 @@ void FileSystem::createBlankDirectory(char* buff,char name)
 {
 	int writePoint=0;
 	buff[writePoint] = name;
+	
 	//incrementWritePointer
 	writePoint++;
-	writeIntToBuffer(writePoint,1234,buff);
+	writeIntToBuffer(writePoint,1,buff);
 	writePoint+=4;
 	buff[writePoint] ='d';
 	writePoint++;
@@ -330,10 +333,11 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
 	// and name of sub directory, so /a/b/c/d -> pass it c and this places d into c
 		char directBuff[64];
 
-			if(subdirecNameLen == 1)
+			if(subdirecNameLen == 2)
 			{
 				// set it to be written to the directory
 				int position = getFreePointer(1);
+				
 				// get the data in root into a buffer
 				myPM->readDiskBlock(1,directBuff);
 				// write the position of the file-I-node to the buffer
@@ -341,6 +345,7 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
 				position++;
 				writeIntToBuffer(position, blkNum, directBuff);
 				directBuff[position+4] = type;
+				
 				myPM->writeDiskBlock(1,directBuff);
 			}
 			else{
@@ -353,6 +358,7 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
 					sub[i] = subDirectoryName[i];
 				}
 				int direcNum = searchForFile(1,sub,subdirecNameLen-2);
+				
 				int position = getFreePointer(direcNum);
 				// get the data in root into a buffer
 				myPM->readDiskBlock(direcNum,directBuff);
@@ -361,7 +367,8 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
 				position++;
 				writeIntToBuffer(position, blkNum, directBuff);
 				directBuff[position+4] = type;
-				myPM->writeDiskBlock(1,directBuff);
+			
+				myPM->writeDiskBlock(direcNum,directBuff);
 				
 			}
 

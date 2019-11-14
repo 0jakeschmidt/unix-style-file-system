@@ -1,14 +1,27 @@
+#include <map>
+#include <vector>
+
+struct FileInfo
+{
+  int opens = 0;
+  int lockId = -1;
+  int rwPointer = 0;
+};
 
 class FileSystem {
   DiskManager *myDM;
   PartitionManager *myPM;
+
   char myfileSystemName;
   int myfileSystemSize;
   
-  /* declare other private members here */
+  // An association from block numbers to FileInfo instances
+  std::map<int, FileInfo*> fileInfo;
 
   public:
     FileSystem(DiskManager *dm, char fileSystemName);
+   ~FileSystem();
+
     int createFile(char *filename, int fnameLen);
     int createDirectory(char *dirname, int dnameLen);
     int lockFile(char *filename, int fnameLen);
@@ -29,9 +42,5 @@ class FileSystem {
     void createBlankfile(char* buff, char name); // files a buffer with name in correct spot and file type, all pointers blank
     void createBlankDirectory(char* buuf,char name);// creates a blank directory with something in each spot for file names and types 
     void placeInDirectory(char name, int blkNum, char type, char* subDirectoryName, int subdirecNameLen);
-
-
-    /* declare other public members here */
-
 };
 

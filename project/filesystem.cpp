@@ -81,6 +81,60 @@ int FileSystem::_makeFileDescriptor(char* filename, int fnameLen, int offset)
   return static_cast<int>(result - hash);
 }
 
+FileInfo* FileSystem::_getInfoFromDescriptor(int fileDesc)
+{
+  for(auto it = fileInfo.begin(); it != fileInfo.end(); it++)
+  {
+    FileInfo* info = it->second;
+
+    if(info->rwPointers->find(fileDesc) != info->rwPointers->end())
+    {
+      return info;
+    }
+  }
+
+  return nullptr;
+}
+
+char FileSystem::_getModeFromDescriptor(int fileDesc)
+{
+  FileInfo* info = _getInfoFromDescriptor(fileDesc);
+
+  if(info == nullptr)
+  {
+    return '\0';
+  }
+
+  return info->modes->find(fileDesc)->second;
+}
+
+int FileSystem::_getRWFromDescriptor(int fileDesc)
+{
+  FileInfo* info = _getInfoFromDescriptor(fileDesc);
+
+  if(info == nullptr)
+  {
+    return -1;
+  }
+
+  return info->rwPointers->find(fileDesc)->second;
+}
+
+void FileSystem::_setRWFromDescriptor(int fileDesc, int rw)
+{
+  FileInfo* info = _getInfoFromDescriptor(fileDesc);
+
+  // NOTE: Fails silently
+  if(info == nullptr)
+  {
+    return;
+  }
+
+  auto iterator = info->rwPointers->find(fileDesc);
+
+  iterator->second = rw;
+}
+
 int FileSystem::createFile(char *filename, int fnameLen)
 {  
   char name = filename[fnameLen-1];
@@ -207,7 +261,7 @@ int FileSystem::lockFile(char *filename, int fnameLen)
       return -3;
     }
 
-    // The file is alraedy locked
+    // The file is already locked
     if(info->lockId != -1)
     {
       return -1;
@@ -310,30 +364,21 @@ int FileSystem::openFile(char *filename, int fnameLen, char mode, int lockId)
 // -2 -> Other errors
 int FileSystem::closeFile(int fileDesc)
 {
-  bool descriptorFound = false;
+  FileInfo* info = _getInfoFromDescriptor(fileDesc);
 
-  for(auto it = fileInfo.begin(); it != fileInfo.end(); it++)
+  if(info != nullptr)
   {
-    FileInfo* info = it->second;
-
-    if(info->rwPointers->find(fileDesc) != info->rwPointers->end())
+    if(info->opens > 0)
     {
-      // The file descriptor matches an actual file
-      descriptorFound = true;
+      // These three things are the actual action of "closing" a file
+      info->opens--;
+      info->rwPointers->erase(fileDesc);
+      info->modes->erase(fileDesc);
 
-      if(info->opens > 0)
-      {
-        // These three things are the actual action of "closing" a file
-        info->opens--;
-        info->rwPointers->erase(fileDesc);
-        info->modes->erase(fileDesc);
-
-        return 0;
-      }
+      return 0;
     }
   }
-
-  if(!descriptorFound)
+  else
   {
     return -1;
   }

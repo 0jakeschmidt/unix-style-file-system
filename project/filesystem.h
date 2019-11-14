@@ -22,6 +22,11 @@ class FileSystem {
   FileInfo* _initFileInfo(int block);
   int       _makeFileDescriptor(char* filename, int fnameLen, int offset);
 
+  FileInfo* _getInfoFromDescriptor(int fileDesc);
+  char      _getModeFromDescriptor(int fileDesc);
+  int       _getRWFromDescriptor(int fileDesc);
+  void      _setRWFromDescriptor(int fileDesc, int rw);
+
   public:
     FileSystem(DiskManager *dm, char fileSystemName);
    ~FileSystem();

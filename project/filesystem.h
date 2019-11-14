@@ -1,3 +1,4 @@
+
 class FileSystem {
   DiskManager *myDM;
   PartitionManager *myPM;
@@ -23,7 +24,13 @@ class FileSystem {
     int renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2);
     int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
+    int searchForFile(int start,char *fileName, int); // returns -1 if the file doesnt exsist, otherwise it returns blk number for file i-node
+    int getFreePointer(int blockNum);// returns a free pointer when given blocknumber 
+    void createBlankfile(char* buff, char name); // files a buffer with name in correct spot and file type, all pointers blank
+
+
 
     /* declare other public members here */
 
 };
+

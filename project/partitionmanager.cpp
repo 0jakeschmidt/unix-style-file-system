@@ -2,7 +2,10 @@
 #include "diskmanager.h"
 #include "bitvector.h"
 #include "partitionmanager.h"
+#include <cstdlib>
 #include <iostream>
+#include <fstream>
+#include <cstdlib>
 
 using namespace std;
 
@@ -21,7 +24,7 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
   myBV = new BitVector(partitionsize);
   if(buff[0] == '#'){
     myBV->setBit(0);
-    myBV->setBit(1);
+    //myBV->setBit(1);
     _writeBitVector();
   }else {
     myBV->setBitVector((unsigned int*) buff);
@@ -51,6 +54,7 @@ int PartitionManager::getFreeDiskBlock()
     if(myBV->testBit(i) == 0){
       blocknum = i;
       myBV->setBit(i);
+      _writeBitVector();
       break;
     };
   }

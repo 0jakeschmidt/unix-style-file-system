@@ -23,12 +23,15 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
 	// create and set the partition manager for file system.
 	myPM = new PartitionManager(myDM,myfileSystemName, myfileSystemSize);
 	// check and set root directory.
+
 	if (myPM->getFreeDiskBlock() == 1){
 		//build root directory 
 		char buff[1];
 		buff[0] = '/';
 		createDirectory(buff,1);
-	}else{}
+	}else{
+		// file has already been created
+	}
 
 }
 int FileSystem::createFile(char *filename, int fnameLen)
@@ -64,23 +67,7 @@ int FileSystem::createFile(char *filename, int fnameLen)
 			//2 cases
 			if (fnameLen == 2)
 			{	// it belongs in root 
-			/*	char fname = filename[fnameLen-1];
-			
-				// set it to be written to the directory
-				int position = getFreePointer(1);
-				// get the data in root into a buffer
-				myPM->readDiskBlock(1,directBuff);
-	
 
-				// write the position of the file-I-node to the buffer
-				directBuff[position] = fname; 
-			
-				position++;
-				writeIntToBuffer(position, blkNum, directBuff);
-				directBuff[position+4] = 'f';
-				myPM->writeDiskBlock(1,directBuff);
-
-		*/
 				char root[1];
 				root[0] = '/';
 				placeInDirectory(name, blkNum,'f',root , 1);
@@ -102,7 +89,7 @@ int FileSystem::createFile(char *filename, int fnameLen)
 int FileSystem::createDirectory(char *dirname, int dnameLen)
 {
 	char buff[64];
-	
+	int blknum =0;
 	char name = dirname[dnameLen-1];
 
 	if(dirname[0] != '/' )
@@ -118,19 +105,27 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
 	{
 		return -1;
 	}
-	
-	// write name to buffer
-	createBlankDirectory(buff,name);
+	// write name to buffer	
+		
 	if(name == '/')
 	{
+		
+		createBlankDirectory(buff,name);
 		myPM->writeDiskBlock(1, buff);
 		return 0;
 	}
+	blknum = myPM->getFreeDiskBlock();
+	if (blknum<0)
+	{
+		//not enough disk space
+		return -2;
+	}
 	
-	int blkNum = myPM->getFreeDiskBlock();
-	myPM->writeDiskBlock(blkNum, buff);
+	
+	myPM->writeDiskBlock(blknum, buff);
 
-	placeInDirectory(name,blkNum, 'd', dirname, dnameLen);
+	placeInDirectory(name,blknum, 'd', dirname, dnameLen);
+	return 0;
 	//this handles the writing of the block to the actual disk
 
 

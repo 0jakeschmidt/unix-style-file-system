@@ -140,17 +140,10 @@ void FileSystem::_setRWFromDescriptor(int fileDesc, int rw)
 int FileSystem::createFile(char *filename, int fnameLen)
 {  
   char name = filename[fnameLen-1];
-  
   //invalid file names here
-  if(filename[0] != '/' ){
-    return -3;
-  }
-  if((name < 'a' || name > 'z') && (name < 'A' || name > 'Z')){
-    return -3;
-  }
-  //return -1 if the file exsists
-  if(searchForFile(1,filename, fnameLen) > 0){
-    return -1;
+  int flag = validateInput(filename, fnameLen);
+  if (flag != 0){
+    return flag;
   }
   // if not enough diskSpace
   int blkNum = myPM->getFreeDiskBlock();
@@ -158,28 +151,20 @@ int FileSystem::createFile(char *filename, int fnameLen)
     return -2;
   }
   // all tests passed, create the file
-  else
-  {    
+  else{    
     char buff[64];
-    // write the file inode to a buffer
     createBlankfile(buff,name);
-
-    // get directory buffer to search for
-    char directBuff[64];
-    
     //2 cases
-    if (fnameLen == 2)
-    {  // it belongs in root 
-
+    if (fnameLen == 2){ 
+     // it belongs in root 
       char root[1];
       root[0] = '/';
       placeInDirectory(name, blkNum,'f',root , 2);
       // actually writes the buffer to a block
       int status = myPM->writeDiskBlock(blkNum, buff);
-        return status;
+      return status;
     }
-    else if (fnameLen >=4)
-    {
+    else if (fnameLen >=4){
       placeInDirectory(name, blkNum,'f', filename, fnameLen);
       int status = myPM->writeDiskBlock(blkNum, buff);
       return status;
@@ -192,43 +177,29 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
   char buff[64];
   int blknum =0;
   char name = dirname[dnameLen-1];
+  int flag = validateInput(dirname,dnameLen);
 
-  if(dirname[0] != '/' )
+  if(flag != 0)
   {
-    return -3;
+    return flag;
   }
-  //if((name < 'a' || name > 'z') && (name < 'A' || name > 'Z') && (name != '/'))
-  //{
-//    return -3;
-//  }
-  //return -1 if the file exsists
-  if(searchForFile(1,dirname, dnameLen) > 0)
-  {
-    return -1;
-  }
-  // write name to buffer  
-    
+ 
   if(name == '/')
-  {
-    
+  { 
     createBlankDirectory(buff,name);
-    
     myPM->writeDiskBlock(1, buff);
     return 0;
   }
-  blknum = myPM->getFreeDiskBlock();
-  if (blknum<0)
-  {
-    //not enough disk space
-    return -2;
-  }
-  createBlankDirectory(buff,name);
-  
-  myPM->writeDiskBlock(blknum, buff);
-  
-  placeInDirectory(name,blknum, 'd', dirname, dnameLen);
-  return 0;
-  //this handles the writing of the block to the actual disk
+    blknum = myPM->getFreeDiskBlock();
+    if (blknum<0)
+    {
+      //not enough disk space
+      return -2;
+    }
+    createBlankDirectory(buff,name);
+    myPM->writeDiskBlock(blknum, buff);
+    placeInDirectory(name,blknum, 'd', dirname, dnameLen);
+    return 0;
 }
 
 // Errors: 
@@ -311,7 +282,11 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
 
 int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
-
+  //1. find the blk number 
+  //2. reset the bit vector 
+  //3. find the previous directory, which we have the blk num for, its the buff[1]
+  //4. delete entry from previous directory
+  //5. go to all of directories memory and replace with #s
 }
 
 // >0 -> Success
@@ -428,18 +403,13 @@ int FileSystem::searchForFile(int start,char *fileName, int len){
   else returns the block number for the file
   */
   char buff[64];
-  // everything starts at root.
-  //grab root and look for directory if name is longer, else if last char search for file name.
   int nextBlock=1;
 
   // Ensure that the first character is always a / for the root directory
   if(fileName[0] != '/')
   {
     return -1;
-  }
-
-    // if name is /a/b/c/d
-    //           
+  }          
     char name = fileName[1];
     
     // grabbed the root;
@@ -607,4 +577,42 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
   
     myPM->writeDiskBlock(direcNum,directBuff);    
   }
+}
+
+/*
+return -3 == bad name
+return -1 == file already exsists
+return 0 == good name 
+*/
+int FileSystem::validateInput(char* name, int nameLen)
+{
+  // this function validates input for file names
+  int valid=0;
+  if(name[0] != '/' ){
+    return -3;
+  }
+  for (int i = 0; i < nameLen; ++i)
+  {
+    if(i%2!=0)
+    {
+      if((name[i] >= 'a' && name[i] <= 'z') || (name[i] >= 'A' && name[i] <= 'z'))
+      {
+        valid++;
+      }
+    }else if(name[i] == '/')
+    {
+      valid++;
+    }
+
+  }
+
+  if (valid != nameLen)
+  {
+    return -3;
+  }
+
+  if(searchForFile(1,name, nameLen) > 0){
+    return -1;
+  }
+  return 0;
 }

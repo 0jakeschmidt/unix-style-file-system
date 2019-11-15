@@ -51,5 +51,6 @@ class FileSystem {
     void createBlankfile(char* buff, char name); // files a buffer with name in correct spot and file type, all pointers blank
     void createBlankDirectory(char* buuf,char name);// creates a blank directory with something in each spot for file names and types 
     void placeInDirectory(char name, int blkNum, char type, char* subDirectoryName, int subdirecNameLen);
+    int validateInput(char* name, int nameLen); // checks naming conventions for files 
 };
 

@@ -272,12 +272,99 @@ int FileSystem::unlockFile(char *filename, int fnameLen, int lockId)
 
   return -2;
 }
-
+/*
+-1 if the file does not exist, 
+-2 if the file is in use or locked,
+-3if the file cannot be deleted for any other reason, and 
+0 if the file is deleted successfully.
+*/
 int FileSystem::deleteFile(char *filename, int fnameLen)
 {
-  // TODO: Make sure that file deletion removes the entry from the `fileInfo`
-  //       map because the data will stay there and then could end up associated
-  //       with a block that has something completely different in it
+
+  int block = validateInput(filename,fnameLen);
+  if(block ==-3)
+  {
+    // filename wasnt vaild
+    return block;
+  }
+  block = searchForFile(1,filename,fnameLen);
+  if(block == -1)
+  {
+    return -1;
+  }
+  FileInfo* info;
+ 
+  // opened or locked 
+  if(fileInfo.find(block) == fileInfo.end())
+  {
+    info = _initFileInfo(block);
+  }
+  info = fileInfo[block];
+
+  if(info->lockId != -1)
+  {
+      return -2; // locked 
+  }
+
+  if(info->opens > 0)
+  {
+    return -2;// file is opened
+  }
+  
+  //rest bitvector for files 
+  resetFilePointers(block);
+  myPM->returnDiskBlock(block);
+
+  fileInfo.erase(fileInfo.find(block));
+  
+  char buff[64];
+
+  if(fnameLen==2)
+  {
+    // if the file is in root 
+    myPM->readDiskBlock(1,buff);
+    //printBuffer(buff,64);
+    int namePosition = searchDirectory(1,filename[fnameLen-1]);
+    buff[namePosition] = '#';
+    namePosition++;
+    writeIntToBuffer(namePosition,0,buff);
+    
+    // update write point for 4 bytes
+    namePosition+=4;
+    //write file type as z so its blank
+    buff[namePosition] = 'z';
+   // printBuffer(buff,64);
+    myPM->writeDiskBlock(1,buff);
+
+    return 0;
+  }
+  else
+  {
+    // if the file is not in root
+    char subdirc[fnameLen-2];
+    for(int i = 0; i < fnameLen-2; ++i)
+    {
+      subdirc[i] = filename[i];
+    }
+    int blk =searchForFile(1,subdirc,fnameLen-2);
+    myPM->readDiskBlock(blk,buff);
+    int namePosition = searchDirectory(blk,filename[fnameLen-1]);
+    buff[namePosition] = '#';
+    namePosition++;
+    writeIntToBuffer(namePosition,0,buff);
+    
+    // update write point for 4 bytes
+    namePosition+=4;
+    //write file type as z so its blank
+    buff[namePosition] = 'z';
+   // printBuffer(buff,64);
+    myPM->writeDiskBlock(blk,buff);
+    return 0;
+  }
+  
+    
+
+
 }
 
 int FileSystem::deleteDirectory(char *dirname, int dnameLen)
@@ -382,6 +469,99 @@ int FileSystem::seekFile(int fileDesc, int offset, int flag)
 }
 int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2)
 {
+    /*
+ -1 invalid filename,  !
+ -2 if the file does not exist, ! 
+ -3 if there already exists a file whose name is the same as the name pointed to by fname2, !
+ -4 if file is opened or locked, 
+ -5 for any other reason, 
+  0 if successful. 
+   */
+
+
+  int testValue = validateInput(filename2,fnameLen2);
+  
+  if (testValue == -3 || testValue == -1)
+  {
+    if(testValue ==-3)
+    {
+      return -1;
+    }
+    else{
+      return -3;
+    }
+  }
+  //-3 bad name
+  // -1 then already pointed to by another file
+
+
+
+  testValue = searchForFile(1, filename1, fnameLen1);
+  if (testValue < 0)
+  {
+    return -2;
+  }
+
+  // if >0 then file1 doesnt exist
+
+  FileInfo* info;
+ 
+
+   if(fileInfo.find(testValue) == fileInfo.end())
+  {
+    info = _initFileInfo(testValue);
+  }
+  info = fileInfo[testValue];
+
+  if(info->lockId != -1)
+  {
+    
+      return -4; // locked 
+  }
+
+  if(info->opens > 0)
+  {
+    return -4;// file is opened
+  }
+
+  char buff[64];
+
+  myPM->readDiskBlock(testValue,buff);
+  //change the name in the file
+  buff[0] =filename2[fnameLen2-1];
+  myPM->writeDiskBlock(testValue,buff);
+
+  // rewrite the name in the files directory 
+
+  if(fnameLen1==2)
+  {
+    // if the file is in root 
+    myPM->readDiskBlock(1,buff);
+    //printBuffer(buff,64);
+    int namePosition = searchDirectory(1,filename1[fnameLen1-1]);
+    buff[namePosition] =filename2[fnameLen2-1];
+    //printBuffer(buff,64);
+    myPM->writeDiskBlock(1,buff);
+    return 0;
+  }
+  else
+  {
+    // if the file is not in root
+    char subdirc[fnameLen1-2];
+    for(int i = 0; i < fnameLen1-2; ++i)
+    {
+      subdirc[i] = filename1[i];
+    }
+    int blk =searchForFile(1,subdirc,fnameLen1-2);
+    myPM->readDiskBlock(blk,buff);
+    int namePosition = searchDirectory(blk,filename1[fnameLen1-1]);
+    buff[namePosition] =filename2[fnameLen2-1];
+   // printBuffer(buff,64);
+    myPM->writeDiskBlock(blk,buff);
+    return 0;
+  }
+
+  return -5;
 
 }
 int FileSystem::getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
@@ -612,7 +792,42 @@ int FileSystem::validateInput(char* name, int nameLen)
   }
 
   if(searchForFile(1,name, nameLen) > 0){
+    //if file exists return -1
     return -1;
   }
   return 0;
+}
+
+int FileSystem::searchDirectory(int blknum,char name)
+{
+  char buff[64];
+
+  myPM->readDiskBlock(blknum,buff);
+
+  for (int i = 0; i < 64; ++i)
+  {
+    if(buff[i] == name)
+    {
+      
+      return i;
+    }
+  }
+  return -1;
+}
+
+void FileSystem::resetFilePointers(int block)
+{
+  // takes a blockNumber and resets all of its pointer blocks in the bitvector
+  char buff[64];
+  myPM->readDiskBlock(block,buff);
+
+  for (int i = 6; i < 18; i+=4)
+  {
+      int pointer = readIntFromBuffer(i,buff);
+      if(pointer>0){
+        myPM->returnDiskBlock(pointer);
+      }
+      
+  }
+    //TODO check for idisk block to more pointers
 }

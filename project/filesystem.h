@@ -52,5 +52,7 @@ class FileSystem {
     void createBlankDirectory(char* buuf,char name);// creates a blank directory with something in each spot for file names and types 
     void placeInDirectory(char name, int blkNum, char type, char* subDirectoryName, int subdirecNameLen);
     int validateInput(char* name, int nameLen); // checks naming conventions for files 
+    int searchDirectory(int blknum,char name);// takes a blk num for a directory and a file name you want to search for. checks that directory for that file
+    void resetFilePointers(int block);// frees the pointers to file block
 };
 

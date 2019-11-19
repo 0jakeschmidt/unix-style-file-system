@@ -451,8 +451,21 @@ int FileSystem::closeFile(int fileDesc)
 }
 
 int FileSystem::readFile(int fileDesc, char *data, int len)
-{
-  return 0;
+{ 
+  if(len < 0) return -2;
+  int rwPointer = _getRWFromDescriptor(fileDesc);
+  FileInfo* info = _getInfoFromDescriptor(fileDesc);
+  if(info != NULL){
+    char buff[64];
+    myPM->readDiskBlock(fileDesc,buff);
+    for(int i = 0; i <= len; i++){
+      data[i] = buff[rwPointer + i];
+    }
+  }else{
+    return -1;
+  }
+
+  return -3;
 }
 int FileSystem::writeFile(int fileDesc, char *data, int len)
 {
@@ -463,9 +476,31 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
 {
 
 }
+
+/*
+* -2 if offset will take you out of bounds of file 
+* -1 if fileDesc, offset, or flag is invalid
+*  0 if successful
+*/
 int FileSystem::seekFile(int fileDesc, int offset, int flag)
 {
-
+  FileInfo* info = _getInfoFromDescriptor(fileDesc);
+  if(info == NULL || (offset < 0 && !(flag != 0)) || flag < 0){
+    return -1;
+  }
+  if(flag == 0){
+    int currentRW = _getRWFromDescriptor(fileDesc);
+    //are all files size 64?
+    if(currentRW + offset > 64 || currentRW + offset < 0){
+      return -2;
+    }else{
+      _setRWFromDescriptor(fileDesc, currentRW + offset);
+    }
+  }else{
+    //set to byte number offest in the file
+    _setRWFromDescriptor(fileDesc, offset);
+  }
+  return 0;
 }
 int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2)
 {

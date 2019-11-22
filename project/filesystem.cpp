@@ -475,14 +475,13 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
   if(info != NULL){
     char buff[64];
-    myPM->readDiskBlock(fileDesc,buff);
+    myPM->readDiskBlock(block, buff);
     for(int i = 0; i <= len; i++){
       data[i] = buff[rwPointer + i];
     }
   }else{
     return -1;
   }
-
   return -3;
 }
 int FileSystem::writeFile(int fileDesc, char *data, int len)

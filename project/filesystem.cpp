@@ -712,26 +712,20 @@ void FileSystem::createBlankfile(char* buff, char name)
     writePoint++;
 
     // write 0 for file size 
-    for (int i=0; i<4; i++){
-      writeIntToBuffer(writePoint+i,0,buff);
-      writePoint++;
-    }
+      writeIntToBuffer(writePoint,0,buff);
+      writePoint+=4;
 
       // write 0 for direct blocks 3 times
     for (int j=0; j<3; j++)
     {
-      for (int i=0; i<4; i++)
-      {
-        writeIntToBuffer(writePoint+i,0,buff);
-        writePoint++;
-      }
+      
+        writeIntToBuffer(writePoint,0,buff);
+        writePoint+=4; 
     }
     // write the indirect block as 0
-    for (int i=0; i<4; i++)
-    {
-      writeIntToBuffer(writePoint+i,0,buff);
-      writePoint++;
-    }
+      writeIntToBuffer(writePoint,0,buff);
+      writePoint+=4;
+    
 }
 void FileSystem::createBlankDirectory(char* buff,char name)
 {

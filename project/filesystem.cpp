@@ -62,6 +62,22 @@ FileInfo* FileSystem::_initFileInfo(int block)
   return info;
 }
 
+int FileSystem::_getBlockFromDescriptor(int fileDesc)
+{
+  map<int, FileInfo*>::iterator it;
+  for(it = fileInfo.begin(); it != fileInfo.end(); it++)
+  {
+    FileInfo* info = it->second;
+
+    if(info->rwPointers->find(fileDesc) != info->rwPointers->end())
+    {
+      return it->first;
+    }
+  }
+
+  return -1;
+}
+
 int FileSystem::_makeFileDescriptor(char* filename, int fnameLen, int offset)
 {
   long result = time(NULL) + offset;
@@ -452,6 +468,8 @@ int FileSystem::closeFile(int fileDesc)
 
 int FileSystem::readFile(int fileDesc, char *data, int len)
 { 
+  int block = _getBlockFromDescriptor(fileDesc);
+
   if(len < 0) return -2;
   int rwPointer = _getRWFromDescriptor(fileDesc);
   FileInfo* info = _getInfoFromDescriptor(fileDesc);

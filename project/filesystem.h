@@ -27,6 +27,9 @@ class FileSystem {
   int       _getRWFromDescriptor(int fileDesc);
   void      _setRWFromDescriptor(int fileDesc, int rw);
 
+  // The returns the block number for the file i-node
+  int       _getBlockFromDescriptor(int fileDesc);
+
   public:
     FileSystem(DiskManager *dm, char fileSystemName);
    ~FileSystem();

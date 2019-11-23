@@ -4,7 +4,7 @@
 #include "partitionmanager.h"
 #include "filesystem.h"
 #include "util.h"
-
+#include <vector>
 #include <time.h>
 #include <cstdlib>
 #include <iostream>
@@ -169,7 +169,8 @@ int FileSystem::createFile(char *filename, int fnameLen)
   // all tests passed, create the file
   else{    
     char buff[64];
-    createBlankfile(buff,name);
+    //createBlankfile(buff,name);
+    createBlankfile(blkNum,name);
     //2 cases
     if (fnameLen == 2){ 
      // it belongs in root 
@@ -177,12 +178,12 @@ int FileSystem::createFile(char *filename, int fnameLen)
       root[0] = '/';
       placeInDirectory(name, blkNum,'f',root , 2);
       // actually writes the buffer to a block
-      int status = myPM->writeDiskBlock(blkNum, buff);
+      int status = 0;
       return status;
     }
     else if (fnameLen >=4){
       placeInDirectory(name, blkNum,'f', filename, fnameLen);
-      int status = myPM->writeDiskBlock(blkNum, buff);
+      int status = 0;
       return status;
     }
   }
@@ -530,7 +531,6 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
   0 if successful. 
    */
 
-
   int testValue = validateInput(filename2,fnameLen2);
   
   if (testValue == -3 || testValue == -1)
@@ -545,8 +545,6 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
   }
   //-3 bad name
   // -1 then already pointed to by another file
-
-
 
   testValue = searchForFile(1, filename1, fnameLen1);
   if (testValue < 0)
@@ -578,10 +576,11 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
 
   char buff[64];
 
-  myPM->readDiskBlock(testValue,buff);
+  //--myPM->readDiskBlock(testValue,buff);
   //change the name in the file
-  buff[0] =filename2[fnameLen2-1];
-  myPM->writeDiskBlock(testValue,buff);
+  //--buff[0] =filename2[fnameLen2-1];
+  setFileName(testValue,filename2[fnameLen2-1]);
+  //--myPM->writeDiskBlock(testValue,buff);
 
   // rewrite the name in the files directory 
 
@@ -675,23 +674,12 @@ int FileSystem::searchForFile(int start,char *fileName, int len){
   return -1;
 }
 
-int FileSystem::getFreePointer(int blockNum)
+int FileSystem::getFreePointerDirectory(int blockNum)
 {
   // takes a blk number and returns the pos of free pointers 
   char buff[64];
   myPM->readDiskBlock(blockNum, buff);
   
-  // two cases, either a file-inode or directory i-node
-  char type = buff[1];
-
-  if(type == 'f')
-  {
-    for (int i = 6; i < 64; i+=4)
-    {
-      if (readIntFromBuffer(i,buff) == 0)
-      return i;
-    }
-  }
     //directory
     for(int i=6; i<64; i++)
     {  
@@ -702,29 +690,22 @@ int FileSystem::getFreePointer(int blockNum)
       }
     }
 }
-void FileSystem::createBlankfile(char* buff, char name)
+void FileSystem::createBlankfile(int block, char name)
 {
-    int writePoint=0;
-    buff[writePoint] =name; 
-    writePoint++;
-    // write f for file type 
-    buff[writePoint] = 'f';
-    writePoint++;
+    setFileName(block,name);
 
-    // write 0 for file size 
-      writeIntToBuffer(writePoint,0,buff);
-      writePoint+=4;
+    setFileType(block,'f');
 
-      // write 0 for direct blocks 3 times
-    for (int j=0; j<3; j++)
+    setFileSize(block,0);
+    //printf("made it past file size\n");
+    vector<int> pointers;
+    for (int i = 0; i < 3; ++i)
     {
-      
-        writeIntToBuffer(writePoint,0,buff);
-        writePoint+=4; 
+      pointers.push_back(0);
     }
-    // write the indirect block as 0
-      writeIntToBuffer(writePoint,0,buff);
-      writePoint+=4;
+   
+    setFileDataPointers(block, pointers);
+    setFileIndirect(block,0);
     
 }
 void FileSystem::createBlankDirectory(char* buff,char name)
@@ -769,7 +750,7 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
   if(subdirecNameLen == 2)
   {
     // set it to be written to the directory
-    int position = getFreePointer(1);
+    int position = getFreePointerDirectory(1);
     
     // get the data in root into a buffer
     myPM->readDiskBlock(1,directBuff);
@@ -792,7 +773,7 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
     }
     int direcNum = searchForFile(1,sub,subdirecNameLen-2);
     
-    int position = getFreePointer(direcNum);
+    int position = getFreePointerDirectory(direcNum);
     // get the data in root into a buffer
     myPM->readDiskBlock(direcNum,directBuff);
     // write the position of the file-I-node to the buffer
@@ -875,5 +856,138 @@ void FileSystem::resetFilePointers(int block)
       }
       
   }
+
     //TODO check for idisk block to more pointers
 }
+
+//takes a disk blknumber, returns that files name 
+char FileSystem::getFileName(int block){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    return buff[0];
+}
+// takes block number and a char for a name, writes it to that block
+void FileSystem::setFileName(int block, char name){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    buff[0] = name;
+    myPM->writeDiskBlock(block,buff);
+}
+//takes a disk blknumber, returns that files type
+char FileSystem::getFileType(int block){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    return buff[1];
+}
+// takes block number and a char for a name, writes it to that block
+void FileSystem::setFileType(int block, char type){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    buff[1] = type;
+    myPM->writeDiskBlock(block,buff);
+}
+//gets and the file size takes a block number
+int FileSystem::getFileSize(int block){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    int size = readIntFromBuffer(2,buff);
+    return size;
+}
+// takes block number and a char for a name, writes it to that block
+void FileSystem::setFileSize(int block, int size){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    writeIntToBuffer(2,size, buff);
+    myPM->writeDiskBlock(block,buff);
+}
+//gets the block number for indirect inode. takes the file i-node block number for a parameter 
+int FileSystem::getFileIndirect(int block){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    int inode = readIntFromBuffer(18,buff);
+    return inode;
+}
+// takes block number and a char for a name, writes it to that block
+void FileSystem::setFileIndirect(int block, int blknumIndirect){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    writeIntToBuffer(18,blknumIndirect, buff);
+    myPM->writeDiskBlock(block,buff);
+}
+
+// needs a blank int vector passed by reference, will fill the vector with block numbers 
+// and a block number
+void FileSystem::getFileDataPointers(int block, vector<int> &pointers){
+    pointers.clear();
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+    int readPoint= 6;
+    //get first three pointers 
+    for (int i = 0; i < 3; ++i)
+    { 
+      int dataBlock = readIntFromBuffer(readPoint,buff);
+      readPoint+=4;
+      if(dataBlock != 0)
+      {
+        pointers.push_back(dataBlock);
+      }
+    }
+    //get file i-node if needed 
+    int inode = getFileIndirect(block);
+    if(inode!= 0)
+    {
+      myPM->readDiskBlock(inode,buff);
+      readPoint =0;
+      for (int i = 0; i < 16; ++i)
+      { 
+      int dataBlock = readIntFromBuffer(readPoint,buff);
+      readPoint+=4;
+      if(dataBlock != 0)
+      {
+        pointers.push_back(dataBlock);
+      }
+    }
+
+    }
+}
+
+// pass in a vector filled with blk numbers for the data blocks, and the file inode block.
+// this function handles inode blocks for you.
+void FileSystem::setFileDataPointers(int block, vector<int> &pointers){
+    char buff[64];
+    myPM->readDiskBlock(block,buff);
+
+    int readPoint= 6;
+    //set first three pointers 
+    for (int i = 0; i <3; ++i)
+    { 
+      
+      int dataBlock = pointers.at(i);
+      writeIntToBuffer(readPoint,dataBlock,buff);
+      readPoint+=4;
+      
+    }
+    myPM->writeDiskBlock(block,buff);
+
+    if(pointers.size() >=4)
+    {
+      int indirect = getFileIndirect(block);
+        if(indirect ==0)
+        {
+         indirect = myPM->getFreeDiskBlock();
+         setFileIndirect(block,indirect);
+       }
+
+      myPM->readDiskBlock(indirect,buff);
+      readPoint =0;
+      for (int i = 3; i < pointers.size(); ++i)
+      {
+        int dataBlock = pointers.at(i);
+        writeIntToBuffer(readPoint,dataBlock,buff);
+        readPoint+=4;
+      }
+      myPM->writeDiskBlock(indirect,buff);
+    }
+
+}
+

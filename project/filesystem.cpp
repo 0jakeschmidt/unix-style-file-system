@@ -473,35 +473,117 @@ int FileSystem::closeFile(int fileDesc)
 * -3 if action is not permitted
 */
 int FileSystem::readFile(int fileDesc, char *data, int len){ 
-  vector<int> blocks;
-  int block = _getBlockFromDescriptor(fileDesc);
-  getFileDataPointers(block, blocks);
-  if(len < 0) return -2;
-  int rwPointer = _getRWFromDescriptor(fileDesc);
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
-  if(info != NULL){
-    if(info->lockId != -1) return -3;
-      int counter = 0;
-      for(int i = 0; i < blocks.size(); i++){
-        char buff[64];
-        myPM->readDiskBlock(blocks.at(i), buff);
-        for(;counter <= len; counter++){
-          data[counter] = buff[rwPointer + counter];
-        }
-      }
-  }else{
-      return -1;
+  char mode = _getModeFromDescriptor(fileDesc);
+  int rwPointer = _getRWFromDescriptor(fileDesc);
+  int blockNum = _getBlockFromDescriptor(fileDesc);
+  int fileSize = getFileSize(blockNum);
+  if(len < 0) return -2;
+  if(info == NULL) return -1;
+  if(info->lockId != -1 || mode == 'w') return -3;
+  cout<<"filedexc: "<<fileDesc<<"len: "<<len<<"rwpointer: "<<rwPointer<<"fsize: "<<fileSize<<endl;
+  cout<<"1 \n"<<endl;
+  if(rwPointer >= fileSize) return 0;
+  cout<<"2 \n"<<endl;
+
+  vector<int> blocks;
+  getFileDataPointers(blockNum, blocks);
+  if(blocks.size() <= 0) return 0;
+  cout<<"3 \n"<<endl;
+  int startBlock = rwPointer / 64;
+  int endBlock = (len + rwPointer) / 64;
+  int currentBlock = startBlock;
+  int dataLen = 0;
+  int returnVal = len;
+  bool hasOverflow = false;
+  endBlock = blocks.size() -1 < endBlock ? blocks.size() -1 : endBlock;
+  for(;currentBlock<=endBlock; currentBlock++){
+    if(hasOverflow) break;
+    int readLocation = 0;
+    char buff[64];
+    if(currentBlock == startBlock){
+      readLocation = rwPointer % 64; 
+    }
+    myPM->readDiskBlock(blocks.at(currentBlock), buff);
+    for(; readLocation<64;readLocation++){
+      if(dataLen >= fileSize || dataLen == len){
+        returnVal =  dataLen;
+        hasOverflow = true;
+        break;
+      };
+      data[dataLen++] = buff[readLocation];
+    }
   }
+
+  _setRWFromDescriptor(fileDesc, rwPointer + dataLen);
+  return returnVal;
 }
 
 int FileSystem::writeFile(int fileDesc, char *data, int len)
 {
+  if(len < 0) return -2;
+  FileInfo* info = _getInfoFromDescriptor(fileDesc);
+  int block = _getBlockFromDescriptor(fileDesc);
+  int rwPointer = _getRWFromDescriptor(fileDesc);
+  vector<int> blocks;
+  getFileDataPointers(block, blocks);
+  int startBlock = rwPointer / 64;
+  int returnVal = 0;
+  char mode = _getModeFromDescriptor(fileDesc);
+  if(info != NULL ) {
+    if(info->lockId != -1 || mode == 'r') return -3;
+    int currentBlock = startBlock;
+    bool isOutOfBounds = false;
+    for(int i = 0; i < len; i+=64){
+      if(isOutOfBounds){
+        break;
+      }
+      char buff[64];
+      if(currentBlock >= blocks.size()){
+        int diskBlock = myPM->getFreeDiskBlock();
+        if(diskBlock != -1){
+          blocks.push_back(diskBlock);
+        }else{
+          return -3;
+        }
+      }
+      int dataBlock = blocks.at(currentBlock);
+      //possible error below
+      int startNode = currentBlock == startBlock ? currentBlock % 64 : 0; 
+      // possible error above
 
-  return 0;
+      for(int k = startNode; k < 64; k++){
+        if(k+i >= len) {
+          isOutOfBounds = true;
+          returnVal = k+i;
+        }else{
+          buff[k] = data[k+i];
+        }
+      }
+      myPM->writeDiskBlock(dataBlock, buff);
+      currentBlock++;
+    }
+    // cout<<"\n\nHERE\n\n"<<endl;
+    // for(int i = 0; i < blocks.size(); i++){
+    //   char buff[64];
+    //   myPM->readDiskBlock(blocks.at(i), buff);
+    //   printBuffer(buff, 64);
+    // }
+    // cout<<"\n\nAfter\n\n"<<endl;
+    setFileDataPointers(block, blocks);
+    setFileSize(block, len + rwPointer);
+    _setRWFromDescriptor(fileDesc, rwPointer + len);
+    returnVal = len;
+  }
+
+  return returnVal;
 }
 int FileSystem::appendFile(int fileDesc, char *data, int len)
 {
-
+  int blockNum = _getBlockFromDescriptor(fileDesc);
+  int fileSize = getFileSize(blockNum);
+  _setRWFromDescriptor(fileDesc, fileSize);
+  return writeFile(fileDesc, data, len);
 }
 
 /*
@@ -512,20 +594,23 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
 int FileSystem::seekFile(int fileDesc, int offset, int flag)
 {
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
-  if(info == NULL || (offset < 0 && !(flag != 0)) || flag < 0){
+  if(info == NULL || (offset < 0 && flag != 0)){
     return -1;
   }
-  if(flag == 0){
-    int currentRW = _getRWFromDescriptor(fileDesc);
-    //are all files size 64?
-    if(currentRW + offset > 64 || currentRW + offset < 0){
+  int currentRW = _getRWFromDescriptor(fileDesc);
+  int blockNum = _getBlockFromDescriptor(fileDesc);
+  int fileSize = getFileSize(blockNum);
+  if(flag != 0){
+    if(offset >= fileSize){
       return -2;
-    }else{
-      _setRWFromDescriptor(fileDesc, currentRW + offset);
     }
-  }else{
-    //set to byte number offest in the file
     _setRWFromDescriptor(fileDesc, offset);
+  }else{
+    int newRw = currentRW + offset;
+    if( newRw >= fileSize || newRw < 0){
+      return -2;
+    }
+    _setRWFromDescriptor(fileDesc, newRw);
   }
   return 0;
 }
@@ -968,7 +1053,7 @@ void FileSystem::setFileDataPointers(int block, vector<int> &pointers){
 
     int readPoint= 6;
     //set first three pointers 
-    for (int i = 0; i <3; ++i)
+    for (int i = 0; i < pointers.size() && i < 3; ++i)
     { 
       
       int dataBlock = pointers.at(i);

@@ -467,24 +467,33 @@ int FileSystem::closeFile(int fileDesc)
   return -2;
 }
 
-int FileSystem::readFile(int fileDesc, char *data, int len)
-{ 
+/*
+* -1 if file is null
+* -2 if len is < 0
+* -3 if action is not permitted
+*/
+int FileSystem::readFile(int fileDesc, char *data, int len){ 
+  vector<int> blocks;
   int block = _getBlockFromDescriptor(fileDesc);
-
+  getFileDataPointers(block, blocks);
   if(len < 0) return -2;
   int rwPointer = _getRWFromDescriptor(fileDesc);
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
   if(info != NULL){
-    char buff[64];
-    myPM->readDiskBlock(block, buff);
-    for(int i = 0; i <= len; i++){
-      data[i] = buff[rwPointer + i];
-    }
+    if(info->lockId != -1) return -3;
+      int counter = 0;
+      for(int i = 0; i < blocks.size(); i++){
+        char buff[64];
+        myPM->readDiskBlock(blocks.at(i), buff);
+        for(;counter <= len; counter++){
+          data[counter] = buff[rwPointer + counter];
+        }
+      }
   }else{
-    return -1;
+      return -1;
   }
-  return -3;
 }
+
 int FileSystem::writeFile(int fileDesc, char *data, int len)
 {
 

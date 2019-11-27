@@ -50,12 +50,11 @@ class FileSystem {
     int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int searchForFile(int start,char *fileName, int); // returns -1 if the file doesnt exsist, otherwise it returns blk number for file i-node
-    int getFreePointerDirectory(int blockNum);// returns a free pointer when given blocknumber 
+    int getFreePointerDirectory(int &blockNum);// returns a free pointer when given blocknumber 
     void createBlankfile(int blknum, char name); // files a buffer with name in correct spot and file type, all pointers blank
-    void createBlankDirectory(char* buff,char name);// creates a blank directory with something in each spot for file names and types 
+    void createBlankDirectory(int blocknumber);// creates a blank directory with something in each spot for file names and types 
     void placeInDirectory(char name, int blkNum, char type, char* subDirectoryName, int subdirecNameLen);
-    int validateInput(char* name, int nameLen); // checks naming conventions for files 
-    int searchDirectory(int blknum,char name);// takes a blk num for a directory and a file name you want to search for. checks that directory for that file
+    int validateInput(char* name, int nameLen); // checks naming conventions for files
     void resetFilePointers(int block);// frees the pointers to file block
     char getFileName(int block);
     void setFileName(int block, char name);// takes block number and a char for a name, writes it to that block
@@ -67,6 +66,11 @@ class FileSystem {
     void setFileIndirect(int block, int blknumIndirect);// takes a block number for file i node and blk number for indirect inode and sets it
     void getFileDataPointers(int block, vector<int> &pointers);// takes a block number and vector by reference, returns the vector with all of the pointers to data blocks, handles indirect blocks too
     void setFileDataPointers(int block, vector<int> &pointers);// takes a block number and vector, sets the pointers in the file i-node for data, handles indirect blocks
+    void setDirecIndirect(int block);
+    int getDirecIndirect(int block);
+    int getFilefromDirec(int block, char name);
+    int getDirecfromDirec(int block, char name);
+    int getFilePosInDirectory(int &block, char name);
 
 
 };

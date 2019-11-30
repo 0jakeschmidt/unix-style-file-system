@@ -164,9 +164,21 @@ int FileSystem::createFile(char *filename, int fnameLen)
   if(searchForFile(1,filename,fnameLen) >0){
     return -1;
   }
-    if(searchForDirec(1,filename,fnameLen) >0){
+  if(searchForDirec(1,filename,fnameLen) >0){
     return -4;
   }
+  if(fnameLen >2){
+    char subdirc[fnameLen-2];
+    for(int i = 0; i < fnameLen-2; ++i)
+    {
+      subdirc[i] = filename[i];
+    }
+    int blk =searchForDirec(1,subdirc,fnameLen-2);
+    if(blk == -1){
+      return -4;
+    }
+  }
+
   // if not enough diskSpace
   int blkNum = myPM->getFreeDiskBlock();
   if(blkNum <0){
@@ -190,8 +202,6 @@ int FileSystem::createFile(char *filename, int fnameLen)
     else if (fnameLen >=4){
       placeInDirectory(name, blkNum,'f', filename, fnameLen);
       int status = 0;
-      
-      
       return status;
     }
   }
@@ -319,7 +329,13 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     // filename wasnt vaild
     return block;
   }
+  block = searchForDirec(1,filename,fnameLen);
+  if(block>0){
+    return-3;
+  }
+
   block = searchForFile(1,filename,fnameLen);
+  
   if(block == -1)
   {
     return -1;
@@ -358,15 +374,10 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     int directNum =1;
     int namePosition = getFilePosInDirectory(directNum,filename[fnameLen-1]);
     myPM->readDiskBlock(directNum,buff);
-    buff[namePosition] = '#';
-    namePosition++;
-    writeIntToBuffer(namePosition,0,buff);
-    
-    // update write point for 4 bytes
-    namePosition+=4;
-    //write file type as z so its blank
-    buff[namePosition] = '#';
-   
+    for (int i = namePosition; i < namePosition+6; ++i)
+    {
+       buff[i] = '#';
+    }
     myPM->writeDiskBlock(directNum,buff);
 
     return 0;
@@ -379,19 +390,14 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     {
       subdirc[i] = filename[i];
     }
-    int blk =searchForFile(1,subdirc,fnameLen-2);
+    int blk =searchForDirec(1,subdirc,fnameLen-2);
     
     int namePosition = getFilePosInDirectory(blk,filename[fnameLen-1]);
     myPM->readDiskBlock(blk,buff);
-    buff[namePosition] = '#';
-    namePosition++;
-    writeIntToBuffer(namePosition,0,buff);
-    
-    // update write point for 4 bytes
-    namePosition+=4;
-    //write file type as z so its blank
-    buff[namePosition] = '#';
-   
+    for (int i = namePosition; i < namePosition+6; ++i)
+    {
+       buff[i] = '#';
+    }
     myPM->writeDiskBlock(blk,buff);
     return 0;
   }
@@ -403,11 +409,66 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
 
 int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
-  //1. find the blk number 
-  //2. reset the bit vector 
-  //3. find the previous directory, which we have the blk num for, its the buff[1]
-  //4. delete entry from previous directory
-  //5. go to all of directories memory and replace with #s
+    char buff[64];
+    int result = validateInput(dirname,dnameLen);
+    if(result ==-3)
+    {
+       // filename wasnt vaild
+     return -3;
+    }
+    result = searchForDirec(1,dirname,dnameLen);
+    if(result == -1)
+    {
+      // return -1 if not exsist
+      return -1;
+    }
+  
+   
+    for (int i = 0; i < 64; ++i)
+    {
+      if(buff[i] != '#'){
+        return -2;
+      }
+    }
+    resetFilePointers(result);
+    myPM->returnDiskBlock(result);
+
+    if(dnameLen==2)
+    {
+    // if the file is in root 
+    
+    int directNum =1;
+    int namePosition = getDirPosInDirectory(directNum,dirname[dnameLen-1]);
+    myPM->readDiskBlock(directNum,buff);
+    for (int i = namePosition; i < namePosition+6; ++i)
+    {
+       buff[i] = '#';
+    }
+    myPM->writeDiskBlock(directNum,buff);
+
+    return 0;
+  }
+  else
+  {
+    // if the file is not in root
+    char subdirc[dnameLen-2];
+    for(int i = 0; i < dnameLen-2; ++i)
+    {
+      subdirc[i] = dirname[i];
+    }
+    int blk =searchForDirec(1,subdirc,dnameLen-2);
+    
+    int namePosition = getDirPosInDirectory(blk,dirname[dnameLen-1]);
+    myPM->readDiskBlock(blk,buff);
+    for (int i = namePosition; i < namePosition+6; ++i)
+    {
+       buff[i] = '#';
+    }
+    myPM->writeDiskBlock(blk,buff);
+    return 0;
+  }
+
+
 }
 
 // >0 -> Success
@@ -640,6 +701,7 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
   0 if successful. 
    */
   
+  int testValue1=0;
 
   int testValue = validateInput(filename2,fnameLen2);
   
@@ -647,16 +709,22 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
   {
     return -1;
   }
-    testValue = searchForFile(1, filename2, fnameLen2);
-  if (testValue > 0)
+  testValue = searchForFile(1, filename2, fnameLen2);
+  testValue1 = searchForDirec(1, filename2, fnameLen2);
+  if (testValue > 0 || testValue1 >0)
   {
     return -3;
   }
 
+  
   testValue = searchForFile(1, filename1, fnameLen1);
-  if (testValue < 0)
+  testValue1 = searchForDirec(1, filename1, fnameLen1);
+  if (testValue < 0 && testValue1 <0)
   {
     return -2;
+  }
+  else if(testValue1 > testValue){
+    testValue = testValue1;
   }
 
 
@@ -1192,3 +1260,36 @@ int FileSystem::getFilePosInDirectory(int &block, char name)
   return -1;
 }
 
+int FileSystem::getDirPosInDirectory(int &block, char name)
+{
+  
+  char buff[64];
+  myPM->readDiskBlock(block,buff);
+
+  int point =-1;
+  for (int i = 5; i < 64; i+=6)
+  {
+    if(buff[i]== 'd' && buff[i-5] == name)
+      {
+        
+        return i-5;
+      }
+  }
+  int indirect = getDirecIndirect(block);
+  if(indirect> 0)
+  {
+    myPM->readDiskBlock(indirect,buff);
+   
+  
+     for (int i = 5; i < 64; i+=6)
+    {
+      if(buff[i]== 'd' && buff[i-5] == name)
+      {
+        block = indirect;
+        
+        return i-5;
+      }
+    }
+  }
+  return -1;
+}

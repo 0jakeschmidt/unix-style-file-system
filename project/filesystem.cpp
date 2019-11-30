@@ -164,6 +164,9 @@ int FileSystem::createFile(char *filename, int fnameLen)
   if(searchForFile(1,filename,fnameLen) >0){
     return -1;
   }
+    if(searchForDirec(1,filename,fnameLen) >0){
+    return -4;
+  }
   // if not enough diskSpace
   int blkNum = myPM->getFreeDiskBlock();
   if(blkNum <0){
@@ -187,6 +190,8 @@ int FileSystem::createFile(char *filename, int fnameLen)
     else if (fnameLen >=4){
       placeInDirectory(name, blkNum,'f', filename, fnameLen);
       int status = 0;
+      
+      
       return status;
     }
   }
@@ -203,10 +208,14 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
   {
     return flag;
   }
-  //TODO this might have an error, due to search only looking at the last part of the name as a file not a directory
-  if(searchForFile(1,dirname,dnameLen) > 0){
+    if(searchForDirec(1,dirname,dnameLen) > 0){
     return -1;
   }
+  //TODO this might have an error, due to search only looking at the last part of the name as a file not a directory
+  if(searchForFile(1,dirname,dnameLen) > 0){
+    return -4;
+  }
+
  
   if(name == '/')
   { 
@@ -745,6 +754,33 @@ int FileSystem::searchForFile(int start,char *fileName, int len){
   return-1;
 
 }
+int FileSystem::searchForDirec(int start,char *fileName, int len){
+
+  if(validateInput(fileName,len) ==-3){
+
+    return -1;
+  }
+  char name = fileName[len-1];
+  if(len == 2){
+
+    return getDirecfromDirec(start,name);
+  }
+  else if(len>2){
+    name = fileName[1];
+    int point =getDirecfromDirec(start,name);
+    if(point == -1){
+      return -1;
+    }
+    char newName[len-2];
+    for(int j=0; j<len-2; j++)
+    {
+      newName[j]=fileName[j+2];
+    }
+      return  searchForDirec(point,newName,len-2);
+  }
+  return-1;
+
+}
 
 int FileSystem::getFreePointerDirectory(int &blockNum)
 {
@@ -839,7 +875,7 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
     {
       sub[i] = subDirectoryName[i];
     }
-    int direcNum = searchForFile(1,sub,subdirecNameLen-2);
+    int direcNum = searchForDirec(1,sub,subdirecNameLen-2);
     
     int position = getFreePointerDirectory(direcNum);
    

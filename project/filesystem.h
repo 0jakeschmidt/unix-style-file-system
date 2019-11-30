@@ -50,6 +50,7 @@ class FileSystem {
     int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int searchForFile(int start,char *fileName, int); // returns -1 if the file doesnt exsist, otherwise it returns blk number for file i-node
+    int searchForDirec(int start,char *fileName, int);
     int getFreePointerDirectory(int &blockNum);// returns a free pointer when given blocknumber 
     void createBlankfile(int blknum, char name); // files a buffer with name in correct spot and file type, all pointers blank
     void createBlankDirectory(int blocknumber);// creates a blank directory with something in each spot for file names and types 

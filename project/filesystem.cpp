@@ -94,7 +94,7 @@ int FileSystem::_makeFileDescriptor(char* filename, int fnameLen, int offset)
       hash *= prime;
     }
   }
-  
+
   return static_cast<int>(abs(result-hash));
 }
 
@@ -660,6 +660,10 @@ int FileSystem::appendFile(int fileDesc, char *data, int len)
   int blockNum = _getBlockFromDescriptor(fileDesc);
   int fileSize = getFileSize(blockNum);
   int oldRwPointer = _getRWFromDescriptor(fileDesc);
+  if(fileSize+len>1216){
+    //max file size == 1216 can't pass this 
+    return -3;
+  }
   _setRWFromDescriptor(fileDesc, fileSize);
   int wFile = writeFile(fileDesc, data, len);
   if(wFile < 0){

@@ -89,13 +89,13 @@ int FileSystem::_makeFileDescriptor(char* filename, int fnameLen, int offset)
   {
     if(filename[i] != '/')
     {
-      unsigned short value = filename[i];
+      unsigned short int value = filename[i];
       hash = hash ^ value;
       hash *= prime;
     }
   }
-
-  return static_cast<int>(result - hash);
+  
+  return static_cast<int>(abs(result-hash));
 }
 
 FileInfo* FileSystem::_getInfoFromDescriptor(int fileDesc)
@@ -252,12 +252,16 @@ int FileSystem::createDirectory(char *dirname, int dnameLen)
 int FileSystem::lockFile(char *filename, int fnameLen)
 {
   int block = searchForFile(1, filename, fnameLen);
-
+  int isDirectory = searchForDirec(1, filename, fnameLen);
   // The requested file does not exist
+   if(isDirectory>0){
+    return -4;
+  }
   if(block == -1)
   {
     return -2;
   }
+
 
   FileInfo* info;
 
@@ -422,9 +426,10 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
       // return -1 if not exsist
       return -1;
     }
-  
-   
-    for (int i = 0; i < 64; ++i)
+    
+    myPM->readDiskBlock(result,buff);
+    
+    for (int i = 0; i < 60; ++i)
     {
       if(buff[i] != '#'){
         return -2;
@@ -605,6 +610,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
   int startBlock = rwPointer / 64;
   int returnVal = -1;
   char mode = _getModeFromDescriptor(fileDesc);
+
   int fileSize = getFileSize(block);
   if(info != NULL ) {
     if(info->lockId != -1 || mode == 'r') return -3;
@@ -724,7 +730,7 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
     return -2;
   }
   else if(testValue1 > testValue){
-    testValue = testValue1;
+    return renameDirectory(filename1,fnameLen1, filename2, fnameLen2);
   }
 
 
@@ -774,7 +780,7 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
     {
       subdirc[i] = filename1[i];
     }
-    int blk =searchForFile(1,subdirc,fnameLen1-2);
+    int blk =searchForDirec(1,subdirc,fnameLen1-2);
     int namePosition = getFilePosInDirectory(blk, filename1[fnameLen1-1]);
     myPM->readDiskBlock(blk,buff);
     buff[namePosition] =filename2[fnameLen2-1];
@@ -786,6 +792,39 @@ int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int 
   return -5;
 
 }
+int FileSystem::renameDirectory(char *filename1, int fnameLen1, char *filename2, int fnameLen2 )
+{
+  //find block where subdirec is pointing to file, change name there and return 0 
+  char buff[64];
+  if(fnameLen1 == 2)
+  {
+    int directNum =1;
+    int namePosition = getDirPosInDirectory(directNum, filename1[fnameLen1-1]);
+    myPM->readDiskBlock(directNum,buff);
+    buff[namePosition] =filename2[fnameLen2-1];
+   
+    myPM->writeDiskBlock(directNum,buff);
+    return 0;
+  }
+  else{
+    // if the file is not in root
+    char subdirc[fnameLen1-2];
+    for(int i = 0; i < fnameLen1-2; ++i)
+    {
+      subdirc[i] = filename1[i];
+    }
+    int blk =searchForDirec(1,subdirc,fnameLen1-2);
+    int namePosition = getDirPosInDirectory(blk, filename1[fnameLen1-1]);
+   
+    myPM->readDiskBlock(blk,buff);
+    buff[namePosition] =filename2[fnameLen2-1];
+    
+    myPM->writeDiskBlock(blk,buff);
+    return 0;
+  }
+
+}
+
 int FileSystem::getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
 {
 
@@ -954,7 +993,7 @@ void FileSystem::placeInDirectory(char name, int blkNum, char type, char* subDir
     position++;
     writeIntToBuffer(position, blkNum, directBuff);
     directBuff[position+4] = type;
-  
+
     myPM->writeDiskBlock(direcNum,directBuff);    
   }
 }

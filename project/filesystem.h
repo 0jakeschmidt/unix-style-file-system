@@ -47,6 +47,7 @@ class FileSystem {
     int appendFile(int fileDesc, char *data, int len);
     int seekFile(int fileDesc, int offset, int flag);
     int renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2);
+    int renameDirectory(char *filename1, int fnameLen1, char *filename2, int fnameLen2 );
     int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
     int searchForFile(int start,char *fileName, int); // returns -1 if the file doesnt exsist, otherwise it returns blk number for file i-node

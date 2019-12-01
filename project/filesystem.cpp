@@ -571,21 +571,24 @@ int FileSystem::readFile(int fileDesc, char *data, int len){
   getFileDataPointers(blockNum, blocks);
   if(blocks.size() <= 0) return 0;
   int startBlock = rwPointer / 64;
-  int endBlock = (len + rwPointer) / 64;
+  int endBlock = (len + rwPointer) / 64;  
   int currentBlock = startBlock;
   int dataLen = 0;
   int returnVal = len;
   bool hasOverflow = false;
   endBlock = blocks.size() -1 < endBlock ? blocks.size() -1 : endBlock;
+
   for(;currentBlock<=endBlock; currentBlock++){
     if(hasOverflow) break;
+ 
     int readLocation = 0;
     char buff[64];
     if(currentBlock == startBlock){
       readLocation = rwPointer % 64; 
     }
     myPM->readDiskBlock(blocks.at(currentBlock), buff);
-    for(; readLocation<64;readLocation++){
+    for(; readLocation<=64;readLocation++){
+
       if(dataLen + rwPointer >= fileSize || dataLen == len){
         returnVal =  dataLen;
         hasOverflow = true;
@@ -594,7 +597,6 @@ int FileSystem::readFile(int fileDesc, char *data, int len){
       data[dataLen++] = buff[readLocation];
     }
   }
-
   _setRWFromDescriptor(fileDesc, rwPointer + dataLen);
   return returnVal;
 }
@@ -614,6 +616,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
   int fileSize = getFileSize(block);
   if(info != NULL ) {
     if(info->lockId != -1 || mode == 'r') return -3;
+  
     int currentBlock = startBlock;
     bool isOutOfBounds = false;
     for(int i = 0; i < len; i+=64){
@@ -626,6 +629,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
         if(diskBlock != -1){
           blocks.push_back(diskBlock);
         }else{
+  
           return -3;
         }
       }

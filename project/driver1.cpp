@@ -127,6 +127,8 @@ int main()
   cout << "rv from openFile /b is " << f2 << (f2>0 ? " Correct file opened (m) f2 ": " failure") <<endl;
   r = c1->myFS->writeFile(f1, buf1, 5);
   cout << "rv from writeFile /a f1 is " << r <<(r==5 ? " Correct wrote 5 s": " failure") <<endl;
+
+  
   r = c1->myFS->writeFile(f1, buf2, 5);
   cout << "rv from writeFile /a f1 is " << r <<(r==5 ? " Correct wrote 5 b": " failure") <<endl;
   r = c1->myFS->writeFile(f1, buf3, 5);

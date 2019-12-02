@@ -435,8 +435,16 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
         return -2;
       }
     }
-    resetFilePointers(result);
+
+    int indirect = getDirecIndirect(result);
+    myPM->readDiskBlock(result, buff);
+   
     myPM->returnDiskBlock(result);
+    if (indirect>0)
+    {
+      myPM->returnDiskBlock(indirect);
+
+    }
 
     if(dnameLen==2)
     {
@@ -598,6 +606,7 @@ int FileSystem::readFile(int fileDesc, char *data, int len){
     }
   }
   _setRWFromDescriptor(fileDesc, rwPointer + dataLen);
+
   return returnVal;
 }
 
@@ -625,6 +634,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
       }
       char buff[64];
       if(currentBlock >= blocks.size()){
+
         int diskBlock = myPM->getFreeDiskBlock();
         if(diskBlock != -1){
           blocks.push_back(diskBlock);
@@ -634,14 +644,18 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
         }
       }
       int dataBlock = blocks.at(currentBlock);
+
+      myPM->readDiskBlock(dataBlock,buff);
       //possible error below
       int startNode = currentBlock == startBlock ? currentBlock % 64 : 0; 
       // possible error above
-
+      //printf("\nstartNode = %d\n",startNode );
       for(int k = startNode; k < 64; k++){
         if(k+i >= len) {
           isOutOfBounds = true;
           returnVal = k+i;
+          break;
+          //TODO do we really need this 
         }else{
           buff[k] = data[k+i];
         }
@@ -654,6 +668,7 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
       setFileSize(block, len + rwPointer);
     }
     _setRWFromDescriptor(fileDesc, rwPointer + len);
+
     returnVal = len;
   }
 
@@ -1045,19 +1060,21 @@ int FileSystem::validateInput(char* name, int nameLen)
 void FileSystem::resetFilePointers(int block)
 {
   // takes a blockNumber and resets all of its pointer blocks in the bitvector
-  char buff[64];
-  myPM->readDiskBlock(block,buff);
+  vector<int> v;
+  getFileDataPointers(block,v);
 
-  for (int i = 6; i < 18; i+=4)
+  for (int i = 0; i < v.size(); ++i)
   {
-      int pointer = readIntFromBuffer(i,buff);
-      if(pointer>0){
-        myPM->returnDiskBlock(pointer);
-      }
-      
+    if(v.size()>0){
+      myPM->returnDiskBlock(v.at(i));
+    }
   }
+  int indirect =getFileIndirect(block);
 
-    //TODO check for idisk block to more pointers
+  if(indirect>0){
+    myPM->returnDiskBlock(indirect);
+  }
+ 
 }
 
 //takes a disk blknumber, returns that files name 
@@ -1103,8 +1120,9 @@ void FileSystem::setFileSize(int block, int size){
 //gets the block number for indirect inode. takes the file i-node block number for a parameter 
 int FileSystem::getFileIndirect(int block){
     char buff[64];
+    int inode =-1;
     myPM->readDiskBlock(block,buff);
-    int inode = readIntFromBuffer(18,buff);
+    inode = readIntFromBuffer(18,buff);
     return inode;
 }
 // takes block number and a char for a name, writes it to that block
@@ -1339,4 +1357,16 @@ int FileSystem::getDirPosInDirectory(int &block, char name)
     }
   }
   return -1;
+}
+void FileSystem::testPrintAllFileData(int block){
+      vector<int> v;
+      getFileDataPointers(block, v);
+
+      for (int i = 0; i < v.size(); ++i)
+      {
+        char buff[64];
+        printf("blockNum: %d\n",v.at(i) );
+        myPM->readDiskBlock(v.at(i),buff);
+        printBuffer(buff,64);
+      }
 }

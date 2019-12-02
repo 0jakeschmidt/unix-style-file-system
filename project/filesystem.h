@@ -74,6 +74,7 @@ class FileSystem {
     int getDirecfromDirec(int block, char name);
     int getFilePosInDirectory(int &block, char name);
     int getDirPosInDirectory(int &block, char name);
+    void testPrintAllFileData(int block);
 
 
 };

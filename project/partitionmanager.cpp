@@ -24,7 +24,7 @@ PartitionManager::PartitionManager(DiskManager *dm, char partitionname, int part
   myBV = new BitVector(partitionsize);
   if(buff[0] == '#'){
     myBV->setBit(0);
-    //myBV->setBit(1);
+    
     _writeBitVector();
   }else {
     myBV->setBitVector((unsigned int*) buff);
@@ -56,7 +56,7 @@ int PartitionManager::getFreeDiskBlock()
       myBV->setBit(i);
       _writeBitVector();
       break;
-    };
+    }
   }
   return blocknum;
 }
@@ -68,6 +68,7 @@ int PartitionManager::returnDiskBlock(int blknum)
 {
   /* write the code for deallocating a partition block */
   myBV->resetBit(blknum);
+
   return _writeBitVector() < 0 ? -1 : 0;
  }
 

@@ -24,13 +24,14 @@ FileSystem::FileSystem(DiskManager *dm, char fileSystemName)
   // create and set the partition manager for file system.
   myPM = new PartitionManager(myDM,myfileSystemName, myfileSystemSize);
   // check and set root directory.
-
-  if (myPM->getFreeDiskBlock() == 1){
+  int root = myPM->getFreeDiskBlock();
+  if ( root == 1){
     //build root directory 
     char buff[1];
     buff[0] = '/';
     createDirectory(buff,1);
   }else{
+    myPM->returnDiskBlock(root);
     // file has already been created
   }
 }
@@ -326,7 +327,11 @@ int FileSystem::unlockFile(char *filename, int fnameLen, int lockId)
 */
 int FileSystem::deleteFile(char *filename, int fnameLen)
 {
-
+  char buffClear[64];
+  for (int i = 0; i < 64; ++i)
+  {
+    buffClear[i] = '#';
+  }
   int block = validateInput(filename,fnameLen);
   if(block ==-3)
   {
@@ -365,6 +370,7 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
   
   //rest bitvector for files 
   resetFilePointers(block);
+  myPM->writeDiskBlock(block,buffClear);
   myPM->returnDiskBlock(block);
 
   fileInfo.erase(fileInfo.find(block));
@@ -377,12 +383,15 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
     
     int directNum =1;
     int namePosition = getFilePosInDirectory(directNum,filename[fnameLen-1]);
+    
     myPM->readDiskBlock(directNum,buff);
     for (int i = namePosition; i < namePosition+6; ++i)
     {
        buff[i] = '#';
     }
+
     myPM->writeDiskBlock(directNum,buff);
+    checkDirecNodeSpace(1);
 
     return 0;
   }
@@ -395,14 +404,16 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
       subdirc[i] = filename[i];
     }
     int blk =searchForDirec(1,subdirc,fnameLen-2);
-    
+    int orginBlock = blk;
     int namePosition = getFilePosInDirectory(blk,filename[fnameLen-1]);
+    
     myPM->readDiskBlock(blk,buff);
     for (int i = namePosition; i < namePosition+6; ++i)
     {
        buff[i] = '#';
     }
     myPM->writeDiskBlock(blk,buff);
+    checkDirecNodeSpace(orginBlock);
     return 0;
   }
   
@@ -413,7 +424,11 @@ int FileSystem::deleteFile(char *filename, int fnameLen)
 
 int FileSystem::deleteDirectory(char *dirname, int dnameLen)
 {
-    char buff[64];
+    char buffClear[64];
+    for (int i = 0; i < 64; ++i)
+    {
+      buffClear[i] = '#';
+    }
     int result = validateInput(dirname,dnameLen);
     if(result ==-3)
     {
@@ -426,26 +441,28 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
       // return -1 if not exsist
       return -1;
     }
-    
+    char buff[64];
     myPM->readDiskBlock(result,buff);
     
-    for (int i = 0; i < 60; ++i)
+    for (int i = 0; i < 64; ++i)
     {
       if(buff[i] != '#'){
         return -2;
       }
     }
 
-    int indirect = getDirecIndirect(result);
-    myPM->readDiskBlock(result, buff);
-   
+    //int indirect = getDirecIndirect(result);
+
+    myPM->writeDiskBlock(result,buffClear);
     myPM->returnDiskBlock(result);
+    /* TODO shouldnt need this 
     if (indirect>0)
     {
+      myPM->writeDiskBlock(indirect,buffClear);
       myPM->returnDiskBlock(indirect);
 
     }
-
+    */
     if(dnameLen==2)
     {
     // if the file is in root 
@@ -458,7 +475,7 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
        buff[i] = '#';
     }
     myPM->writeDiskBlock(directNum,buff);
-
+    checkDirecNodeSpace(1);
     return 0;
   }
   else
@@ -470,7 +487,7 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
       subdirc[i] = dirname[i];
     }
     int blk =searchForDirec(1,subdirc,dnameLen-2);
-    
+    int orginBlock = blk;
     int namePosition = getDirPosInDirectory(blk,dirname[dnameLen-1]);
     myPM->readDiskBlock(blk,buff);
     for (int i = namePosition; i < namePosition+6; ++i)
@@ -478,6 +495,7 @@ int FileSystem::deleteDirectory(char *dirname, int dnameLen)
        buff[i] = '#';
     }
     myPM->writeDiskBlock(blk,buff);
+    checkDirecNodeSpace(orginBlock);
     return 0;
   }
 
@@ -1116,7 +1134,8 @@ int FileSystem::getFreePointerDirectory(int &blockNum)
      return getFreePointerDirectory(blockNum);
     }
     else{
-      setDirecIndirect(blockNum);
+      int pointer = myPM->getFreeDiskBlock();
+      setDirecIndirect(blockNum,pointer);
       indirect = getDirecIndirect(blockNum);
       blockNum = indirect;
 
@@ -1244,16 +1263,23 @@ void FileSystem::resetFilePointers(int block)
   // takes a blockNumber and resets all of its pointer blocks in the bitvector
   vector<int> v;
   getFileDataPointers(block,v);
+  char buff[64];
+  for (int i = 0; i < 64; ++i)
+  {
+    buff[i] = '#';
+  }
 
   for (int i = 0; i < v.size(); ++i)
   {
     if(v.size()>0){
+      myPM->writeDiskBlock(v.at(i),buff);
       myPM->returnDiskBlock(v.at(i));
     }
   }
   int indirect =getFileIndirect(block);
 
   if(indirect>0){
+    myPM->writeDiskBlock(indirect,buff);
     myPM->returnDiskBlock(indirect);
   }
  
@@ -1391,15 +1417,21 @@ void FileSystem::setFileDataPointers(int block, vector<int> &pointers){
 
 }
 
-void FileSystem::setDirecIndirect(int block)
+void FileSystem::setDirecIndirect(int block, int pointer)
 {
   char buff[64];
-  int pointer = myPM->getFreeDiskBlock();
+  
   myPM->readDiskBlock(block,buff);
-
+  if (pointer <0){
+    for (int i = 60; i < 64; ++i)
+    {
+      buff[i] = '#';
+    }
+    myPM->writeDiskBlock(block,buff);
+  }else{
   writeIntToBuffer(60,pointer,buff);
   myPM->writeDiskBlock(block,buff);
-
+}
   
 }
 
@@ -1551,4 +1583,28 @@ void FileSystem::testPrintAllFileData(int block){
         myPM->readDiskBlock(v.at(i),buff);
         printBuffer(buff,64);
       }
+}
+void FileSystem::checkDirecNodeSpace(int blk){
+    char buff[64];
+    int indirect = getDirecIndirect(blk);
+   
+   if(indirect >0){
+    myPM->readDiskBlock(indirect,buff);
+
+    bool flag = true;
+
+    for (int i = 0; i <64 ; ++i)
+    {
+      if(buff[i] != '#')
+      {
+        flag = false;
+      }
+    }
+
+    if(flag)
+    {
+      setDirecIndirect(blk,-1);
+      myPM->returnDiskBlock(indirect);
+    }
+  }
 }

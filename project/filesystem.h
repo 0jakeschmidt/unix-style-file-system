@@ -68,13 +68,13 @@ class FileSystem {
     void setFileIndirect(int block, int blknumIndirect);// takes a block number for file i node and blk number for indirect inode and sets it
     void getFileDataPointers(int block, vector<int> &pointers);// takes a block number and vector by reference, returns the vector with all of the pointers to data blocks, handles indirect blocks too
     void setFileDataPointers(int block, vector<int> &pointers);// takes a block number and vector, sets the pointers in the file i-node for data, handles indirect blocks
-    void setDirecIndirect(int block);
+    void setDirecIndirect(int block,int pointer);
     int getDirecIndirect(int block);
     int getFilefromDirec(int block, char name);
     int getDirecfromDirec(int block, char name);
     int getFilePosInDirectory(int &block, char name);
     int getDirPosInDirectory(int &block, char name);
     void testPrintAllFileData(int block);
-
+    void checkDirecNodeSpace(int blk);
 
 };

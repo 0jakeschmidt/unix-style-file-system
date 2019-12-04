@@ -1617,4 +1617,5 @@ void FileSystem::setFileTypeAttribute(int blk, char* buff )
   {
     fileInode[inodeLocation+i] = buff[i];
   }
+  myPM->writeDiskBlock(blk,fileInode);
 }

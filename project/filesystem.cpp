@@ -1572,18 +1572,6 @@ int FileSystem::getDirPosInDirectory(int &block, char name)
   }
   return -1;
 }
-void FileSystem::testPrintAllFileData(int block){
-      vector<int> v;
-      getFileDataPointers(block, v);
-
-      for (int i = 0; i < v.size(); ++i)
-      {
-        char buff[64];
-        printf("blockNum: %d\n",v.at(i) );
-        myPM->readDiskBlock(v.at(i),buff);
-        printBuffer(buff,64);
-      }
-}
 void FileSystem::checkDirecNodeSpace(int blk){
     char buff[64];
     int indirect = getDirecIndirect(blk);
@@ -1606,5 +1594,27 @@ void FileSystem::checkDirecNodeSpace(int blk){
       setDirecIndirect(blk,-1);
       myPM->returnDiskBlock(indirect);
     }
+  }
+}
+void FileSystem::getFileTypeAttribute(int blk, char* buff )
+{
+  char fileInode[64];
+  myPM->readDiskBlock(blk, fileInode);
+
+  int inodeLocation=22;
+  for (int i = 0; i < 3; ++i)
+  {
+    buff[i] = fileInode[inodeLocation+i];
+  }
+}
+void FileSystem::setFileTypeAttribute(int blk, char* buff )
+{
+  char fileInode[64];
+  myPM->readDiskBlock(blk, fileInode);
+
+  int inodeLocation=22;
+  for (int i = 0; i < 3; ++i)
+  {
+    fileInode[inodeLocation+i] = buff[i];
   }
 }

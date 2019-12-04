@@ -7,3 +7,6 @@ driver5
 driver6
 bitvector_driver
 driver
+
+*.py
+*.txt

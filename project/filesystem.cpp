@@ -564,116 +564,295 @@ int FileSystem::closeFile(int fileDesc)
 * -2 if len is < 0
 * -3 if action is not permitted
 */
-int FileSystem::readFile(int fileDesc, char *data, int len){ 
+int FileSystem::readFile(int fileDesc, char *data, int len)
+{ 
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
-  char mode = _getModeFromDescriptor(fileDesc);
-  int rwPointer = _getRWFromDescriptor(fileDesc);
-  int blockNum = _getBlockFromDescriptor(fileDesc);
-  int fileSize = getFileSize(blockNum);
+
+  char mode      = _getModeFromDescriptor(fileDesc);
+  int  rwPointer = _getRWFromDescriptor(fileDesc);
+  int  blockNum  = _getBlockFromDescriptor(fileDesc);
+  int  fileSize  = getFileSize(blockNum);
+
   if(len < 0) return -2;
   if(info == NULL) return -1;
   if(info->lockId != -1 || mode == 'w') return -3;
   if(rwPointer >= fileSize) return 0;
 
   vector<int> blocks;
+
   getFileDataPointers(blockNum, blocks);
+
   if(blocks.size() <= 0) return 0;
-  int startBlock = rwPointer / 64;
-  int endBlock = (len + rwPointer) / 64;  
+
+  int startBlock   = rwPointer / 64;
+  int endBlock     = (len + rwPointer) / 64;  
   int currentBlock = startBlock;
-  int dataLen = 0;
-  int returnVal = len;
-  bool hasOverflow = false;
+  int dataLen      = 0;
+  int returnVal    = len;
+
+  bool finishedReading = false;
+
   endBlock = blocks.size() -1 < endBlock ? blocks.size() -1 : endBlock;
 
-  for(;currentBlock<=endBlock; currentBlock++){
-    if(hasOverflow) break;
+  for(; currentBlock <= endBlock; currentBlock++)
+  {
+    if(finishedReading) break;
  
-    int readLocation = 0;
+    int  readLocation = 0;
     char buff[64];
-    if(currentBlock == startBlock){
+
+    if(currentBlock == startBlock)
+    {
       readLocation = rwPointer % 64; 
     }
-    myPM->readDiskBlock(blocks.at(currentBlock), buff);
-    for(; readLocation<=64;readLocation++){
 
-      if(dataLen + rwPointer >= fileSize || dataLen == len){
-        returnVal =  dataLen;
-        hasOverflow = true;
-        break;
-      };
+    myPM->readDiskBlock(blocks.at(currentBlock), buff);
+
+    for(; readLocation < 64; readLocation++)
+    {
       data[dataLen++] = buff[readLocation];
+
+      if(dataLen + rwPointer >= fileSize || dataLen == len)
+      {
+        returnVal = dataLen;
+        finishedReading = true;
+        break;
+      }
     }
   }
+
   _setRWFromDescriptor(fileDesc, rwPointer + dataLen);
 
   return returnVal;
 }
 
-int FileSystem::writeFile(int fileDesc, char *data, int len)
+
+/*int FileSystem::writeFile(int fileDesc, char *data, int len)
 {
-  if(len < 0) return -2;
+  if(len < 0)
+  {
+    return -2;
+  }
+
   FileInfo* info = _getInfoFromDescriptor(fileDesc);
-  int block = _getBlockFromDescriptor(fileDesc);
+
+  int block     = _getBlockFromDescriptor(fileDesc);
   int rwPointer = _getRWFromDescriptor(fileDesc);
-  vector<int> blocks;
-  getFileDataPointers(block, blocks);
-  int startBlock = rwPointer / 64;
-  int returnVal = -1;
+  int fileSize  = getFileSize(block);
+
   char mode = _getModeFromDescriptor(fileDesc);
 
-  int fileSize = getFileSize(block);
-  if(info != NULL ) {
+  vector<int> blocks;
+  getFileDataPointers(block, blocks);
+
+  // startBlock is an index in the `blocks` vector
+  int startBlock = rwPointer / 64;
+  // int returnVal  = -1;
+
+  if(info != NULL)
+  {
+    // The file is either locked or the mode is invalid for a write operation
     if(info->lockId != -1 || mode == 'r') return -3;
   
-    int currentBlock = startBlock;
-    bool isOutOfBounds = false;
-    for(int i = 0; i < len; i+=64){
-      if(isOutOfBounds){
+    // currentBlock is an index in the `blocks` vector, not an actual
+    // block number
+    int  currentBlock  = startBlock;
+    bool reachedEndOfData = false;
+
+    for(int i = 0; i < len; i += 64)
+    {
+      if(reachedEndOfData)
+      {
         break;
       }
-      char buff[64];
-      if(currentBlock >= blocks.size()){
 
+      // This is the case where the new content of the file has gone
+      // past the data blocks that were previously allocated for it
+      if(currentBlock >= blocks.size())
+      {
         int diskBlock = myPM->getFreeDiskBlock();
-        if(diskBlock != -1){
+
+        if(diskBlock != -1)
+        {
           blocks.push_back(diskBlock);
-        }else{
-  
+        }
+        else
+        {
           return -3;
         }
       }
-      int dataBlock = blocks.at(currentBlock);
 
-      myPM->readDiskBlock(dataBlock,buff);
-      //possible error below
-      int startNode = currentBlock == startBlock ? currentBlock % 64 : 0; 
-      // possible error above
-      //printf("\nstartNode = %d\n",startNode );
-      for(int k = startNode; k < 64; k++){
-        if(k+i >= len) {
-          isOutOfBounds = true;
-          returnVal = k+i;
+      int  dataBlock = blocks.at(currentBlock);
+      char buff[64];
+
+      myPM->readDiskBlock(dataBlock, buff);
+
+      int characterOffset = (currentBlock == startBlock) ? (rwPointer % 64) : 0;
+
+      printf("\n>>> characterOffset = %d\n", characterOffset);
+      // printf("\n>>> buff = ");
+      // printBuffer(buff, 64);
+      // printf("\n>>> data = ");
+      // printBuffer(data, len);
+      // printf("\n");
+
+      for(int k = 0; k < 64; k++)
+      {
+        if(k + characterOffset >= 64) break;
+
+        if(i + k >= len)
+        {
+          reachedEndOfData = true;
+          // printf("\n\n\nFUCK\n\n\n");
           break;
+          // returnVal = i + k;
           //TODO do we really need this 
-        }else{
-          buff[k] = data[k+i];
+        }
+        else
+        {
+          buff[k + characterOffset] = data[i + k];
         }
       }
+
+      printf("\n>>> [%d] buff = ", dataBlock);
+      printBuffer(buff, 64);
+      printf("\n");
+
       myPM->writeDiskBlock(dataBlock, buff);
+
       currentBlock++;
     }
+
     setFileDataPointers(block, blocks);
-    if(rwPointer + len >= fileSize){
-      setFileSize(block, len + rwPointer);
+
+    // If the amount of text we wrote out exceeds the file size,
+    // we need to update it to the new file size
+    if(rwPointer + len >= fileSize)
+    {
+      setFileSize(block, rwPointer + len);
     }
+
     _setRWFromDescriptor(fileDesc, rwPointer + len);
 
-    returnVal = len;
+    return len;
   }
 
-  return returnVal;
+  return -1;
+}*/
+
+
+
+int FileSystem::writeFile(int fileDesc, char *data, int len)
+{
+  if(len < 0)
+  {
+    return -2;
+  }
+
+  FileInfo* info = _getInfoFromDescriptor(fileDesc);
+
+  int block     = _getBlockFromDescriptor(fileDesc);
+  int rwPointer = _getRWFromDescriptor(fileDesc);
+  int fileSize  = getFileSize(block);
+
+  char mode = _getModeFromDescriptor(fileDesc);
+
+  vector<int> blocks;
+  getFileDataPointers(block, blocks);
+
+  // startBlock is an index in the `blocks` vector
+  int startBlock = rwPointer / 64;
+  // int returnVal  = -1;
+
+  if(info != NULL)
+  {
+    // The file is either locked or the mode is invalid for a write operation
+    if(info->lockId != -1 || mode == 'r') return -3;
+  
+    // currentBlock is an index in the `blocks` vector, not an actual
+    // block number
+    int  currentBlock  = startBlock;
+    bool bufferWritten = false;
+
+    char buff[64];
+    int characterOffset = rwPointer % 64;
+    int blockIndex = -1;
+
+    for(int dataIndex = 0; dataIndex < len; dataIndex++)
+    {
+      if(blockIndex == -1 || blockIndex == 64 || blockIndex + characterOffset == 64)
+      {
+        blockIndex = 0;
+
+        if(dataIndex != 0)
+        {
+          int writeBlock = blocks.at(currentBlock);
+          myPM->writeDiskBlock(writeBlock, buff);
+          // printf("\n>>> [%d] buff = ", writeBlock);
+          // printBuffer(buff, 64);
+          // printf("\n");
+          
+          bufferWritten = true;
+          currentBlock++;
+
+          characterOffset = 0;
+        }
+
+        // This is the case where the new content of the file has gone
+        // past the data blocks that were previously allocated for it
+        if(currentBlock >= blocks.size())
+        {
+          int newBlock = myPM->getFreeDiskBlock();
+
+          if(newBlock != -1)
+          {
+            blocks.push_back(newBlock);
+          }
+          else
+          {
+            return -3;
+          }
+        }
+
+        myPM->readDiskBlock(blocks.at(currentBlock), buff);
+        // printf("\n>>> read buff = ");
+        // printBuffer(buff, 64);
+        // printf("\n");
+      }
+
+      buff[blockIndex + characterOffset] = data[dataIndex];
+      bufferWritten    = false;
+
+      blockIndex++;
+    }
+
+    if(!bufferWritten)
+    {
+      int writeBlock = blocks.at(currentBlock);
+      myPM->writeDiskBlock(writeBlock, buff);
+      // printf("\n>>> [%d] buff = ", writeBlock);
+      // printBuffer(buff, 64);
+      // printf("\n");
+    }
+
+    setFileDataPointers(block, blocks);
+
+    // If the amount of text we wrote out exceeds the file size,
+    // we need to update it to the new file size
+    if(rwPointer + len >= fileSize)
+    {
+      setFileSize(block, rwPointer + len);
+    }
+
+    _setRWFromDescriptor(fileDesc, rwPointer + len);
+
+    return len;
+  }
+
+  return -1;
 }
+
+
 int FileSystem::appendFile(int fileDesc, char *data, int len)
 {
   int blockNum = _getBlockFromDescriptor(fileDesc);
@@ -717,6 +896,9 @@ int FileSystem::seekFile(int fileDesc, int offset, int flag)
     }
     _setRWFromDescriptor(fileDesc, newRw);
   }
+
+  // printf("\n>>>> %d\n", _getRWFromDescriptor(fileDesc));
+
   return 0;
 }
 int FileSystem::renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2)

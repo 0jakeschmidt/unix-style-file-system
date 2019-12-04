@@ -575,7 +575,7 @@ int FileSystem::readFile(int fileDesc, char *data, int len)
 
   if(len < 0) return -2;
   if(info == NULL) return -1;
-  if(info->lockId != -1 || mode == 'w') return -3;
+  if(mode == 'w') return -3;
   if(rwPointer >= fileSize) return 0;
 
   vector<int> blocks;
@@ -766,8 +766,8 @@ int FileSystem::writeFile(int fileDesc, char *data, int len)
 
   if(info != NULL)
   {
-    // The file is either locked or the mode is invalid for a write operation
-    if(info->lockId != -1 || mode == 'r') return -3;
+    // The file can't be written to if it's opened in read mode 
+    if(mode == 'r') return -3;
   
     // currentBlock is an index in the `blocks` vector, not an actual
     // block number

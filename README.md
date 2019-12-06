@@ -1,8 +1,8 @@
 # Final Project
 
-Group name:
+Group name: os_fp-teamlast
 
-group members :
+group members : Marcus Cantu, Jordan Fitzgerald, Jacob Schmidt
 
 
 

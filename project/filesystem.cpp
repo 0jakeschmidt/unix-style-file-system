@@ -1048,13 +1048,61 @@ int FileSystem::renameDirectory(char *filename1, int fnameLen1, char *filename2,
 
 }
 
-int FileSystem::getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
+int FileSystem::getAttribute(char *filename, int fnameLen, char * data, char type)
 {
+  int block = validateInput(filename,fnameLen);
+  if(block ==-3)
+  {
+    // filename wasnt vaild
+    return block;
+  }
+  block = searchForDirec(1,filename,fnameLen);
+  if(block>0){
+    return-3;
+  }
 
+  block = searchForFile(1,filename,fnameLen);
+  
+  if(block == -1)
+  {
+    return -1;
+  }
+
+  if(type == 't'){
+    return getFileTypeAttribute(block, data);
+  }else if (type == 'o'){
+    return getOwnerAttribute(block, data);
+  }else{
+    return -3;
+  }
 }
-int FileSystem::setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */)
+int FileSystem::setAttribute(char *filename, int fnameLen, char* data, char type)
 {
+ int block = validateInput(filename,fnameLen);
+  if(block ==-3)
+  {
+    // filename wasnt vaild
+    return block;
+  }
+  block = searchForDirec(1,filename,fnameLen);
+  if(block>0){
+    return-3;
+  }
 
+  block = searchForFile(1,filename,fnameLen);
+  
+  if(block == -1)
+  {
+    return -1;
+  }
+
+  if(type == 't'){
+    return setFileTypeAttribute(block, data);
+  }else if (type == 'o'){
+    return setOwnerAttribute(block, data);
+  }else{
+    return -4;
+  }
 }
 
 int FileSystem::searchForFile(int start,char *fileName, int len){
@@ -1596,7 +1644,7 @@ void FileSystem::checkDirecNodeSpace(int blk){
     }
   }
 }
-void FileSystem::getFileTypeAttribute(int blk, char* buff )
+int FileSystem::getFileTypeAttribute(int blk, char* buff )
 {
   char fileInode[64];
   myPM->readDiskBlock(blk, fileInode);
@@ -1604,8 +1652,11 @@ void FileSystem::getFileTypeAttribute(int blk, char* buff )
   int inodeLocation=22;
   for (int i = 0; i < 3; ++i)
   {
+    if(fileInode[inodeLocation+i] == '#') return -4;
     buff[i] = fileInode[inodeLocation+i];
   }
+  
+  return 0;
 }
 
 int FileSystem::setFileTypeAttribute(int blk, char* buff )
@@ -1615,6 +1666,33 @@ int FileSystem::setFileTypeAttribute(int blk, char* buff )
 
   int inodeLocation=22;
   for (int i = 0; i < 3; ++i)
+  {
+    fileInode[inodeLocation+i] = buff[i];
+  }
+  return myPM->writeDiskBlock(blk,fileInode);
+}
+
+int FileSystem::getOwnerAttribute(int blk, char* buff )
+{
+  char fileInode[64];
+  myPM->readDiskBlock(blk, fileInode);
+
+  int inodeLocation=25;
+  for (int i = 0; i < 2; ++i)
+  {
+    if(fileInode[inodeLocation+i] == '#') return -4;
+    buff[i] = fileInode[inodeLocation+i];
+  }
+  return 0;
+}
+
+int FileSystem::setOwnerAttribute(int blk, char* buff )
+{
+  char fileInode[64];
+  myPM->readDiskBlock(blk, fileInode);
+
+  int inodeLocation=25;
+  for (int i = 0; i < 2; ++i)
   {
     fileInode[inodeLocation+i] = buff[i];
   }

@@ -1,5 +1,6 @@
 #include <map>
 #include <vector>
+
 struct FileInfo
 {
   int opens, lockId;
@@ -48,8 +49,8 @@ class FileSystem {
     int seekFile(int fileDesc, int offset, int flag);
     int renameFile(char *filename1, int fnameLen1, char *filename2, int fnameLen2);
     int renameDirectory(char *filename1, int fnameLen1, char *filename2, int fnameLen2 );
-    int getAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
-    int setAttribute(char *filename, int fnameLen /* ... and other parameters as needed */);
+    int getAttribute(char *filename, int fnameLen,char * data, char type);
+    int setAttribute(char *filename, int fnameLen,char * data, char type);
     int searchForFile(int start,char *fileName, int); // returns -1 if the file doesnt exsist, otherwise it returns blk number for file i-node
     int searchForDirec(int start,char *fileName, int);
     int getFreePointerDirectory(int &blockNum);// returns a free pointer when given blocknumber 
@@ -75,7 +76,9 @@ class FileSystem {
     int getFilePosInDirectory(int &block, char name);
     int getDirPosInDirectory(int &block, char name);
     void checkDirecNodeSpace(int blk);
-    void getFileTypeAttribute(int blk, char* buff);
+    int getFileTypeAttribute(int blk, char* buff);
     int setFileTypeAttribute(int blk, char* buff);
+    int getOwnerAttribute(int blk, char* buff);
+    int setOwnerAttribute(int blk, char* buff);
 
 };

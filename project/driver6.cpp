@@ -9,6 +9,7 @@
 #include "partitionmanager.h"
 #include "filesystem.h"
 #include "client.h"
+#include "util.h"
 
 using namespace std;
 
@@ -60,56 +61,67 @@ int main()
 
 
   int r;
-  char buf1[3] = {'p','n','g'};
-  f1 = c1->myFS->openFile(const_cast<char *>("/e/b"), 4, 'm', -1);
-  r = c1->myFS->setFileTypeAttribute(f1, buf1);
-  cout << "rv from setFileTypeAttribute for /e/b is"<<r<<(r==3 ? "correct wrote png" : "failed")<<endl;
-  // r = c4->myFS->setFileTypeAttribute(const_cast<char *>("/e/b"), ...);
-  // cout << ...
-  // r = c1->myFS->getAttributes(const_cast<char *>("/e/f"), ...);
-  // cout << ...
-  // r = c4->myFS->getAttributes(const_cast<char *>("/e/b"), ...);
-  // cout << ...
-  // r = c1->myFS->getAttributes(const_cast<char *>("/p"), ...);  //should failed!
-  // cout << ...
-  // r = c4->myFS->setAttributes(const_cast<char *>("/p"), ...);  //should failed!
-  // cout << ...
-  /*
-  r = c2->myFS->setAttributes(const_cast<char *>("/f"), ...);
-  cout << ...
-  r = c5->myFS->setAttributes(const_cast<char *>("/z"), ...);
-  cout << ...
-  r = c2->myFS->getAttributes(const_cast<char *>("/f"), ...);
-  cout << ...
-  r = c5->myFS->getAttributes(const_cast<char *>("/z"), ...);
-  cout << ...
+  char tBuff[3];
+  char oBuff[2];
+  r = c1->myFS->setAttribute(const_cast<char *>("/e/b"), 4, const_cast<char*>("png"), 't');
+  cout << "rv from setAttribute for /e/b is "<<r<<(r==0 ? " correct wrote png" : " failed")<<endl;
+  r = c1->myFS->setAttribute(const_cast<char *>("/e/f"), 4, const_cast<char*>("jpg"), 't');
+  cout << "rv from setAttribute for /e/f is "<<r<<(r==0 ? " correct wrote jpg" : " failed")<<endl;
+  r = c1->myFS->getAttribute(const_cast<char *>("/e/b"),  4, tBuff, 't');
+  cout<< "rv from getAttribute for /e/b is " << r << (r==0 ? " correct" : " failed")<<endl;
+  printBuffer(tBuff, 3);
+  r = c1->myFS->getAttribute(const_cast<char *>("/e/f"),  4, tBuff, 't');
+  cout<< "rv from getAttribute for /e/f is " << r << (r==0 ? " correct" : " failed")<<endl;
+  printBuffer(tBuff, 3);
 
-  r = c3->myFS->setAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
-  cout << ...
-  r = c3->myFS->setAttributes(const_cast<char *>("/o/o/o/a/d"), ...);
-  cout << ...
-  r = c3->myFS->getAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
-  cout << ...
-  r = c3->myFS->getAttributes(const_cast<char *>("o/o/o/a/d"), ...);
-  cout << ...
+  r = c1->myFS->getAttribute(const_cast<char *>("/p"), 2, tBuff, 't');  //should failed!
+  cout<< "rv from getAttribute for /p is " << r << (r==-1 ? " correct" : " failed")<<endl;
+  r = c4->myFS->setAttribute(const_cast<char *>("/p"), 2, const_cast<char*>("gif"), 't');  //should failed!
+  cout<< "rv from getAttribute for /p is " << r << (r==-1 ? " correct" : " failed")<<endl;
+
   
-  r = c2->myFS->setAttributes(const_cast<char *>("/f"), ...);
-  cout << ...
-  r = c5->myFS->setAttributes(const_cast<char *>("/z"), ...);
-  cout << ...
-  r = c2->myFS->getAttributes(const_cast<char *>("/f"), ...);
-  cout << ...
-  r = c5->myFS->getAttributes(const_cast<char *>("/z"), ...);
-  cout << ...
+  r = c2->myFS->setAttribute(const_cast<char *>("/f"), 2, const_cast<char*>("c2"), 'o');
+  cout << "rv from setAttribute for /f "<< r << (r == -3 ? " correct wrote c2" : " failed")<<endl;
+  r = c5->myFS->setAttribute(const_cast<char *>("/z"), 2, const_cast<char*>("c5"), 'o');
+  cout << "rv from setAttribute for /z "<< r << (r == 0 ?" correct wrote c5" : " failed")<<endl;
 
-  r = c3->myFS->setAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
-  cout << ...
-  r = c3->myFS->setAttributes(const_cast<char *>("/o/o/o/a/d"), ...);
-  cout << ...
-  r = c3->myFS->getAttributes(const_cast<char *>("/o/o/o/a/l"), ...);
-  cout << ...
-  r = c3->myFS->getAttributes(const_cast<char *>("o/o/o/a/d"), ...);
-  cout << ...
-*/
+  r = c2->myFS->getAttribute(const_cast<char *>("/f"), 2, oBuff, 'o');
+  cout << "rv from getAttribute for /f "<<r <<(r == -3 ? " correct" : " failed")<<endl;
+  r = c5->myFS->getAttribute(const_cast<char *>("/z"), 2, oBuff, 'o');
+  cout << "rv from getAttribute for /z " << r << (r == 0 ? " correct" : " failed")<<endl;
+  printBuffer(oBuff, 2);
+
+
+  // verify these are correct
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/a/l"), 10, const_cast<char*>("tar"), 't');
+  cout << "rv from setAttribute for /o/o/o/a/l "<<r<< (r== -1 ? " correct wrote tar" : " failed")<<endl;
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/a/d"), 10, const_cast<char*>("txt"), 't');
+  cout << "rv from setAttribute for /o/o/o/a/d "<<r<<( r == -1 ? " correct wrote tar" : " failed")<<endl;
+
+  r = c3->myFS->getAttribute(const_cast<char *>("/o/o/o/a/l"), 10, tBuff, 't');
+  cout << "rv from getAttribute for /o/o/o/a/l "<<r<<(r == -1 ? " correct" : " failed")<<endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("o/o/o/a/d"), 9, tBuff, 't');
+  cout << "rv from getAttribute for o/o/o/a/d "<<r<<(r == -3 ? " correct" : " failed")<<endl;
+  
+  r = c2->myFS->setAttribute(const_cast<char *>("/f"),2, const_cast<char*>("doc"), 't');
+  cout << "rv from setAttribute for /f "<<r<<(r == -3 ? " correct wrote doc" : " failed")<<endl;
+  r = c5->myFS->setAttribute(const_cast<char *>("/z"), 2, const_cast<char*>("png"), 't');
+  cout << "rv from setAttribute for /z "<<r<<(r == 0 ? " correct wrote png" : " failed")<<endl;
+  r = c2->myFS->getAttribute(const_cast<char *>("/f"), 2, tBuff, 't');
+  cout << "rv from getAttribute for /f "<<r<<(r == -3 ? " correct" : " failed")<<endl;
+  r = c5->myFS->getAttribute(const_cast<char *>("/z"), 2, tBuff, 't');
+  cout << "rv from getAttribute for /z "<<r<<(r == 0 ? " correct" : " failed")<<endl;
+  printBuffer(tBuff, 3);
+
+
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/a/l"), 10, const_cast<char*>("c3"), 'o');
+  cout << "rv from setAttribute for /o/o/o/a/l "<<r<<(r == -1 ? " correct" : " failed")<<endl;
+  r = c3->myFS->setAttribute(const_cast<char *>("/o/o/o/a/d"), 10, const_cast<char*>("c3"), 'o');
+  cout << "rv from setAttribute for /o/o/o/a/d "<<r<<(r == -1 ? " correct" : " failed")<<endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("/o/o/o/a/l"), 10, oBuff, 'o');
+  cout << "rv from setAttribute for /o/o/o/a/l"<<r<<(r == -1 ? " correct" : " failed")<<endl;
+  r = c3->myFS->getAttribute(const_cast<char *>("o/o/o/a/d"), 9, oBuff, 'o');
+  cout << "rv from setAttribute for o/o/o/a/d"<<r<<(r == -3 ? " correct" : " failed")<<endl;
+  cout<<"end driver 6"<<endl;
   return 0;
 }

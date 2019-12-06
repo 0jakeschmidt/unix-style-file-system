@@ -1607,7 +1607,8 @@ void FileSystem::getFileTypeAttribute(int blk, char* buff )
     buff[i] = fileInode[inodeLocation+i];
   }
 }
-void FileSystem::setFileTypeAttribute(int blk, char* buff )
+
+int FileSystem::setFileTypeAttribute(int blk, char* buff )
 {
   char fileInode[64];
   myPM->readDiskBlock(blk, fileInode);
@@ -1617,5 +1618,5 @@ void FileSystem::setFileTypeAttribute(int blk, char* buff )
   {
     fileInode[inodeLocation+i] = buff[i];
   }
-  myPM->writeDiskBlock(blk,fileInode);
+  return myPM->writeDiskBlock(blk,fileInode);
 }

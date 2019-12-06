@@ -47,6 +47,7 @@ int main()
   dp[2].partitionSize = 105;
 
   DiskManager *dm = new DiskManager(d, 3, dp);
+  int f1;
   FileSystem *fs1 = new FileSystem(dm, 'A');
   FileSystem *fs2 = new FileSystem(dm, 'B');
   FileSystem *fs3 = new FileSystem(dm, 'C');
@@ -59,23 +60,21 @@ int main()
 
 
   int r;
-
-/*
-What every need to show your set and get Attributes functions work
-
-  r = c1->myFS->setAttributes(const_cast<char *>("/e/f"), ...);
-  cout << ...
-  r = c4->myFS->setAttributes(const_cast<char *>("/e/b"), ...);
-  cout << ...
-  r = c1->myFS->getAttributes(const_cast<char *>("/e/f"), ...);
-  cout << ...
-  r = c4->myFS->getAttributes(const_cast<char *>("/e/b"), ...);
-  cout << ...
-  r = c1->myFS->getAttributes(const_cast<char *>("/p"), ...);  //should failed!
-  cout << ...
-  r = c4->myFS->setAttributes(const_cast<char *>("/p"), ...);  //should failed!
-  cout << ...
-  
+  char buf1[3] = {'p','n','g'};
+  f1 = c1->myFS->openFile(const_cast<char *>("/e/b"), 4, 'm', -1);
+  r = c1->myFS->setFileTypeAttribute(f1, buf1);
+  cout << "rv from setFileTypeAttribute for /e/b is"<<r<<(r==3 ? "correct wrote png" : "failed")<<endl;
+  // r = c4->myFS->setFileTypeAttribute(const_cast<char *>("/e/b"), ...);
+  // cout << ...
+  // r = c1->myFS->getAttributes(const_cast<char *>("/e/f"), ...);
+  // cout << ...
+  // r = c4->myFS->getAttributes(const_cast<char *>("/e/b"), ...);
+  // cout << ...
+  // r = c1->myFS->getAttributes(const_cast<char *>("/p"), ...);  //should failed!
+  // cout << ...
+  // r = c4->myFS->setAttributes(const_cast<char *>("/p"), ...);  //should failed!
+  // cout << ...
+  /*
   r = c2->myFS->setAttributes(const_cast<char *>("/f"), ...);
   cout << ...
   r = c5->myFS->setAttributes(const_cast<char *>("/z"), ...);

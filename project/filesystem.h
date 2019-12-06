@@ -76,6 +76,6 @@ class FileSystem {
     int getDirPosInDirectory(int &block, char name);
     void checkDirecNodeSpace(int blk);
     void getFileTypeAttribute(int blk, char* buff);
-    void setFileTypeAttribute(int blk, char* buff);
+    int setFileTypeAttribute(int blk, char* buff);
 
 };
